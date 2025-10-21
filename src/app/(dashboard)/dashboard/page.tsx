@@ -1,5 +1,8 @@
 "use client";
 
+// Prevent static generation for dashboard routes
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link";
 import { useQuotes } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";

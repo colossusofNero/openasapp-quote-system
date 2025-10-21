@@ -7,9 +7,14 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Spinner } from "@/components/ui/spinner";
 
+// Prevent static generation for dashboard routes
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
+  const status = sessionData?.status || "loading";
 
   useEffect(() => {
     if (status === "unauthenticated") {

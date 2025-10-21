@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard" },
