@@ -1,0 +1,50 @@
+[
+  {
+    "purchasePrice": 0,
+    "factor": 1.0
+  },
+  {
+    "purchasePrice": 250000,
+    "factor": 1.01
+  },
+  {
+    "purchasePrice": 500000,
+    "factor": 1.02
+  },
+  {
+    "purchasePrice": 750000,
+    "factor": 1.05
+  },
+  {
+    "purchasePrice": 1000000,
+    "factor": 1.075
+  },
+  {
+    "purchasePrice": 1250000,
+    "factor": 1.1
+  },
+  {
+    "purchasePrice": 1500000,
+    "factor": 1.25
+  },
+  {
+    "purchasePrice": 2000000,
+    "factor": 1.3
+  },
+  {
+    "purchasePrice": 3000000,
+    "factor": 1.35
+  },
+  {
+    "purchasePrice": 5000000,
+    "factor": 1.4
+  },
+  {
+    "purchasePrice": 7500000,
+    "factor": 1.45
+  },
+  {
+    "purchasePrice": 10000000,
+    "factor": 1.5
+  }
+]

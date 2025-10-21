@@ -1,0 +1,50 @@
+[
+  {
+    "acres": 0,
+    "factor": 0.75
+  },
+  {
+    "acres": 0.25,
+    "factor": 0.8
+  },
+  {
+    "acres": 0.5,
+    "factor": 0.85
+  },
+  {
+    "acres": 1,
+    "factor": 0.9
+  },
+  {
+    "acres": 2,
+    "factor": 0.95
+  },
+  {
+    "acres": 3,
+    "factor": 1.0
+  },
+  {
+    "acres": 4,
+    "factor": 1.05
+  },
+  {
+    "acres": 5,
+    "factor": 1.1
+  },
+  {
+    "acres": 6,
+    "factor": 1.15
+  },
+  {
+    "acres": 7,
+    "factor": 1.2
+  },
+  {
+    "acres": 8,
+    "factor": 1.25
+  },
+  {
+    "acres": "9+",
+    "factor": 1.3
+  }
+]

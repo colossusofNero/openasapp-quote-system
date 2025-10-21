@@ -1,0 +1,376 @@
+{
+  "cost_basis": [
+    {
+      "purchasePrice": 0,
+      "factor": 1.0
+    },
+    {
+      "purchasePrice": 250000,
+      "factor": 1.01
+    },
+    {
+      "purchasePrice": 500000,
+      "factor": 1.02
+    },
+    {
+      "purchasePrice": 750000,
+      "factor": 1.05
+    },
+    {
+      "purchasePrice": 1000000,
+      "factor": 1.075
+    },
+    {
+      "purchasePrice": 1250000,
+      "factor": 1.1
+    },
+    {
+      "purchasePrice": 1500000,
+      "factor": 1.25
+    },
+    {
+      "purchasePrice": 2000000,
+      "factor": 1.3
+    },
+    {
+      "purchasePrice": 3000000,
+      "factor": 1.35
+    },
+    {
+      "purchasePrice": 5000000,
+      "factor": 1.4
+    },
+    {
+      "purchasePrice": 7500000,
+      "factor": 1.45
+    },
+    {
+      "purchasePrice": 10000000,
+      "factor": 1.5
+    }
+  ],
+  "zip_code": [
+    {
+      "zipCode": 0,
+      "factor": 1.11
+    },
+    {
+      "zipCode": 10000,
+      "factor": 1.1
+    },
+    {
+      "zipCode": 20000,
+      "factor": 1.09
+    },
+    {
+      "zipCode": 30000,
+      "factor": 1.08
+    },
+    {
+      "zipCode": 40000,
+      "factor": 1.07
+    },
+    {
+      "zipCode": 50000,
+      "factor": 1.06
+    },
+    {
+      "zipCode": 60000,
+      "factor": 1.04
+    },
+    {
+      "zipCode": 70000,
+      "factor": 1.02
+    },
+    {
+      "zipCode": 80000,
+      "factor": 1.0
+    },
+    {
+      "zipCode": 90000,
+      "factor": 1.01
+    },
+    {
+      "zipCode": 96100,
+      "factor": 1.1
+    },
+    {
+      "zipCode": 99000,
+      "factor": 1.1
+    }
+  ],
+  "sqft": [
+    {
+      "squareFeet": 0,
+      "factor": 1.0
+    },
+    {
+      "squareFeet": 2500,
+      "factor": 1.02
+    },
+    {
+      "squareFeet": 5000,
+      "factor": 1.04
+    },
+    {
+      "squareFeet": 10000,
+      "factor": 1.06
+    },
+    {
+      "squareFeet": 15000,
+      "factor": 1.08
+    },
+    {
+      "squareFeet": 20000,
+      "factor": 1.1
+    },
+    {
+      "squareFeet": 30000,
+      "factor": 1.12
+    },
+    {
+      "squareFeet": 35000,
+      "factor": 1.14
+    },
+    {
+      "squareFeet": 40000,
+      "factor": 1.16
+    },
+    {
+      "squareFeet": 45000,
+      "factor": 1.18
+    },
+    {
+      "squareFeet": 50000,
+      "factor": 1.2
+    },
+    {
+      "squareFeet": "55000+",
+      "factor": 1.22
+    }
+  ],
+  "acres": [
+    {
+      "acres": 0,
+      "factor": 0.75
+    },
+    {
+      "acres": 0.25,
+      "factor": 0.8
+    },
+    {
+      "acres": 0.5,
+      "factor": 0.85
+    },
+    {
+      "acres": 1,
+      "factor": 0.9
+    },
+    {
+      "acres": 2,
+      "factor": 0.95
+    },
+    {
+      "acres": 3,
+      "factor": 1.0
+    },
+    {
+      "acres": 4,
+      "factor": 1.05
+    },
+    {
+      "acres": 5,
+      "factor": 1.1
+    },
+    {
+      "acres": 6,
+      "factor": 1.15
+    },
+    {
+      "acres": 7,
+      "factor": 1.2
+    },
+    {
+      "acres": 8,
+      "factor": 1.25
+    },
+    {
+      "acres": "9+",
+      "factor": 1.3
+    }
+  ],
+  "property_type": [
+    {
+      "propertyType": "Industrial",
+      "factor": 1.01
+    },
+    {
+      "propertyType": "Medical",
+      "factor": 1.01
+    },
+    {
+      "propertyType": "Office",
+      "factor": 1.0
+    },
+    {
+      "propertyType": "Other",
+      "factor": 1.0
+    },
+    {
+      "propertyType": "Restaurant",
+      "factor": 1.01
+    },
+    {
+      "propertyType": "Retail",
+      "factor": 0.85
+    },
+    {
+      "propertyType": "Warehouse",
+      "factor": 0.4
+    },
+    {
+      "propertyType": "Multi-Family",
+      "factor": 0.4
+    },
+    {
+      "propertyType": "Residential/LTR",
+      "factor": 0.7
+    },
+    {
+      "propertyType": "Short-Term Rental",
+      "factor": 0.7
+    }
+  ],
+  "floors": [
+    {
+      "numberOfFloors": 1,
+      "factor": 1.0
+    },
+    {
+      "numberOfFloors": 2,
+      "factor": 1.0
+    },
+    {
+      "numberOfFloors": 3,
+      "factor": 1.05
+    },
+    {
+      "numberOfFloors": 4,
+      "factor": 1.1
+    },
+    {
+      "numberOfFloors": 5,
+      "factor": 1.1
+    },
+    {
+      "numberOfFloors": 6,
+      "factor": 1.15
+    },
+    {
+      "numberOfFloors": 7,
+      "factor": 1.15
+    },
+    {
+      "numberOfFloors": 8,
+      "factor": 1.2
+    },
+    {
+      "numberOfFloors": 9,
+      "factor": 1.2
+    },
+    {
+      "numberOfFloors": 10,
+      "factor": 1.3
+    },
+    {
+      "numberOfFloors": 11,
+      "factor": 1.3
+    },
+    {
+      "numberOfFloors": "12+",
+      "factor": 1.4
+    }
+  ],
+  "multiple_properties": [
+    {
+      "propertyCount": 1,
+      "factor": 1.0
+    },
+    {
+      "propertyCount": 2,
+      "factor": 0.95
+    },
+    {
+      "propertyCount": 3,
+      "factor": 0.9
+    },
+    {
+      "propertyCount": 4,
+      "factor": 0.875
+    },
+    {
+      "propertyCount": 5,
+      "factor": 0.85
+    },
+    {
+      "propertyCount": 6,
+      "factor": 0.825
+    },
+    {
+      "propertyCount": "6+",
+      "factor": 0.8
+    }
+  ],
+  "property_type_mapping": [
+    {
+      "propertyType": "Industrial",
+      "code": 1,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Medical",
+      "code": 2,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Office",
+      "code": 3,
+      "depreciationMethod": 1
+    },
+    {
+      "propertyType": "Other",
+      "code": 4,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Restaurant",
+      "code": 5,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Retail",
+      "code": 6,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Warehouse",
+      "code": 7,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Multi-Family",
+      "code": 8,
+      "depreciationMethod": 2
+    },
+    {
+      "propertyType": "Residential/LTR",
+      "code": 9,
+      "depreciationMethod": 1
+    },
+    {
+      "propertyType": "Short-Term Rental",
+      "code": 10,
+      "depreciationMethod": 2
+    }
+  ]
+}

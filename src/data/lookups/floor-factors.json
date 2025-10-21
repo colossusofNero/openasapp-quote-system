@@ -1,0 +1,50 @@
+[
+  {
+    "numberOfFloors": 1,
+    "factor": 1.0
+  },
+  {
+    "numberOfFloors": 2,
+    "factor": 1.0
+  },
+  {
+    "numberOfFloors": 3,
+    "factor": 1.05
+  },
+  {
+    "numberOfFloors": 4,
+    "factor": 1.1
+  },
+  {
+    "numberOfFloors": 5,
+    "factor": 1.1
+  },
+  {
+    "numberOfFloors": 6,
+    "factor": 1.15
+  },
+  {
+    "numberOfFloors": 7,
+    "factor": 1.15
+  },
+  {
+    "numberOfFloors": 8,
+    "factor": 1.2
+  },
+  {
+    "numberOfFloors": 9,
+    "factor": 1.2
+  },
+  {
+    "numberOfFloors": 10,
+    "factor": 1.3
+  },
+  {
+    "numberOfFloors": 11,
+    "factor": 1.3
+  },
+  {
+    "numberOfFloors": "12+",
+    "factor": 1.4
+  }
+]

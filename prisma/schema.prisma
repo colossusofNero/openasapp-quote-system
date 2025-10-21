@@ -1,0 +1,368 @@
+// This is your Prisma schema file for the Quote System
+// Learn more about Prisma: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Change to "mysql" or "sqlite" as needed
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// USER MODEL - Authentication & Authorization
+// =============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // Should be hashed
+  role      String   @default("user") // user, admin, etc.
+
+  quotes    Quote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+// =============================================================================
+// QUOTE MODELS - Core Quote Data
+// =============================================================================
+
+/// Main quote record - stores all input fields and calculated outputs
+/// Maps to "Input Sheet" and "Printable Quote" sheets
+model Quote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Product type - RCGV or Pro (SMART is deprecated)
+  productType     String   // "RCGV" | "Pro"
+  status          String   @default("draft") // draft, finalized, sent, accepted, etc.
+
+  // ===== INPUT FIELDS (from Input Sheet) =====
+
+  // Property Information (B3, D3, F3, H3, etc.)
+  purchasePrice   Decimal  @db.Decimal(15, 2) // B3
+  zipCode         String   // D3
+  sqFtBuilding    Int?     // F3
+  acresLand       Decimal? @db.Decimal(10, 4) // H3
+  propertyType    String   // J3 (Industrial, Medical, Office, etc.)
+  numberOfFloors  Int?     // L3
+  multipleProperties Int   @default(1) // N3
+
+  // Dates
+  dateOfPurchase  DateTime? // P3
+  taxYear         Int      // R3 (e.g., 2025)
+  yearBuilt       Int?     // P7
+
+  // Financial
+  capEx           Decimal  @default(0) @db.Decimal(15, 2) // AA3 - Capital Improvements
+  accumulated1031Depreciation Decimal @default(0) @db.Decimal(15, 2) // From YbyY data B3
+
+  // Property Owner Details
+  propertyOwnerName String? // B25
+  propertyAddress   String? // B28
+
+  // ===== CALCULATED FIELDS (from Equation Sheet & Output) =====
+
+  // Core Calculations
+  costSegBid      Decimal? @db.Decimal(15, 2) // B9 - from Equation Sheet
+  natLogQuote     Decimal? @db.Decimal(15, 2) // B14
+  finalBidBase    Decimal? @db.Decimal(15, 2) // B15 - minimum of various calculations
+
+  // Derived Values
+  landValue       Decimal? @db.Decimal(15, 2) // Calculated from purchase price
+  buildingValue   Decimal? @db.Decimal(15, 2) // Purchase Price - Land - 1031 Acc Dep + CapEx
+
+  // Applied Factors (from VLOOKUP tables)
+  costBasisFactor       Decimal? @db.Decimal(5, 4) // Applied factor
+  zipCodeFactor         Decimal? @db.Decimal(5, 4)
+  sqFtFactor            Decimal? @db.Decimal(5, 4)
+  acresFactor           Decimal? @db.Decimal(5, 4)
+  propertyTypeFactor    Decimal? @db.Decimal(5, 4)
+  floorsFactor          Decimal? @db.Decimal(5, 4)
+  multiplePropertiesFactor Decimal? @db.Decimal(5, 4)
+
+  // Payment Options (calculated as multipliers of base quote)
+  bidAmountOriginal   Decimal? @db.Decimal(15, 2) // Base price
+  payUpfront          Decimal? @db.Decimal(15, 2) // Base × 0.95
+  pay5050             Decimal? @db.Decimal(15, 2) // Base × 1.1 ÷ 2
+  payOverTime         Decimal? @db.Decimal(15, 2) // Base × 1.2 (monthly)
+  rushFee             Decimal? @db.Decimal(15, 2) // Additional fee if rush service
+  bonusQuote          Decimal? @db.Decimal(15, 2) // Bonus depreciation amount
+
+  // Depreciation Method (39-year or 27.5-year)
+  depreciationMethod  String?  // "39" | "27.5"
+  depreciationYears   Decimal? @db.Decimal(4, 1)
+
+  // ===== PRICING TIERS (B19-B22 from Input Sheet) =====
+  priceTier1          Decimal? @db.Decimal(15, 2)
+  priceTier2          Decimal? @db.Decimal(15, 2)
+  priceTier3          Decimal? @db.Decimal(15, 2)
+  priceTier4          Decimal? @db.Decimal(15, 2)
+
+  // Relationships
+  lineItems           QuoteLineItem[] // Year-by-year depreciation data
+
+  // Metadata
+  notes               String?  @db.Text
+  internalNotes       String?  @db.Text
+  calculationVersion  String?  // Track which calculation logic version was used
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([productType])
+  @@index([taxYear])
+  @@index([createdAt])
+  @@map("quotes")
+}
+
+/// Year-by-year depreciation line items
+/// Maps to "YbyY data" sheet - stores depreciation projections over time
+model QuoteLineItem {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  year    Int    // Year number (1, 2, 3, etc.)
+
+  // Different depreciation methods (columns D-H, I-M, N-R, S+ from YbyY data)
+  method1Depreciation   Decimal? @db.Decimal(15, 2) // First method
+  method2Depreciation   Decimal? @db.Decimal(15, 2) // Second method
+  straightLineDepreciation Decimal? @db.Decimal(15, 2) // Straight Line (SL)
+  method3Depreciation   Decimal? @db.Decimal(15, 2) // Third method
+
+  // Cost Seg vs Standard Comparison
+  costSegEstimate       Decimal? @db.Decimal(15, 2) // Column F from Printable Quote
+  standardDepreciation  Decimal? @db.Decimal(15, 2) // Column G
+  traditionalCostSeg    Decimal? @db.Decimal(15, 2) // Column H
+  bonusDepreciation     Decimal? @db.Decimal(15, 2) // Column I
+
+  // Cumulative values
+  cumulativeDepreciation Decimal? @db.Decimal(15, 2)
+  remainingBasis         Decimal? @db.Decimal(15, 2)
+
+  // Tax savings (calculated)
+  taxSavings             Decimal? @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([quoteId, year])
+  @@index([quoteId])
+  @@map("quote_line_items")
+}
+
+// =============================================================================
+// LOOKUP TABLES - Pricing Factors (from VLOOKUP Tables sheet)
+// =============================================================================
+
+/// Property Type Factor - adjusts pricing based on property type
+/// Maps to Column M-N in VLOOKUP Tables
+/// Industrial: 1.01, Retail: 0.85, Warehouse: 0.4, Multi-Family: 0.4, etc.
+model PropertyTypeFactor {
+  id            String  @id @default(cuid())
+  propertyType  String  @unique // Industrial, Medical, Office, Retail, etc.
+  factor        Decimal @db.Decimal(5, 4) // Multiplier (e.g., 1.01, 0.85, 0.4)
+  secondaryFactor Decimal? @db.Decimal(5, 4) // Column O - additional factor
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyType])
+  @@index([isActive])
+  @@map("property_type_factors")
+}
+
+/// Cost Basis Factor - adjusts pricing based on purchase price range
+/// Maps to Column A-B in VLOOKUP Tables
+/// $0 → 1.0x, $250k → 1.01x, $1M → 1.075x, $2M → 1.3x, $10M+ → 1.5x
+model CostBasisFactor {
+  id            String  @id @default(cuid())
+  minAmount     Decimal @unique @db.Decimal(15, 2) // Minimum purchase price for this tier
+  maxAmount     Decimal? @db.Decimal(15, 2) // Maximum (null for highest tier)
+  factor        Decimal @db.Decimal(5, 4) // Multiplier
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([minAmount])
+  @@index([isActive])
+  @@map("cost_basis_factors")
+}
+
+/// Zip Code Factor - adjusts pricing based on location
+/// Maps to Column D-E in VLOOKUP Tables
+/// Ranges from 0 to 99000, Multipliers: 1.0 to 1.11
+model ZipCodeFactor {
+  id            String  @id @default(cuid())
+  minZipCode    String  @unique // Start of zip code range (e.g., "85000")
+  maxZipCode    String? // End of range (null for open-ended)
+  factor        Decimal @db.Decimal(5, 4) // Multiplier
+  region        String? // Optional region name for reference
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([minZipCode])
+  @@index([isActive])
+  @@map("zip_code_factors")
+}
+
+/// Square Footage Factor - adjusts pricing based on building size
+/// Maps to Column G-H in VLOOKUP Tables
+/// 0-55,000+ sqft, Multipliers: 1.0 to 1.22
+model SqFtFactor {
+  id            String  @id @default(cuid())
+  minSqFt       Int     @unique // Minimum square feet
+  maxSqFt       Int?    // Maximum (null for highest tier)
+  factor        Decimal @db.Decimal(5, 4) // Multiplier
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([minSqFt])
+  @@index([isActive])
+  @@map("sqft_factors")
+}
+
+/// Acres Factor - adjusts pricing based on land size
+/// Maps to Column J-K in VLOOKUP Tables
+/// 0-9+ acres, Multipliers: 0.75 to 1.3
+model AcresFactor {
+  id            String  @id @default(cuid())
+  minAcres      Decimal @unique @db.Decimal(10, 4) // Minimum acres
+  maxAcres      Decimal? @db.Decimal(10, 4) // Maximum (null for highest tier)
+  factor        Decimal @db.Decimal(5, 4) // Multiplier
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([minAcres])
+  @@index([isActive])
+  @@map("acres_factors")
+}
+
+/// Floors Factor - adjusts pricing based on building height
+/// Maps to Column P-Q in VLOOKUP Tables
+/// 1 floor: 1.0, 3 floors: 1.05, 5+ floors: 1.1-1.4
+model FloorsFactor {
+  id            String  @id @default(cuid())
+  numberOfFloors Int    @unique // Number of floors
+  factor        Decimal @db.Decimal(5, 4) // Multiplier
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([numberOfFloors])
+  @@index([isActive])
+  @@map("floors_factors")
+}
+
+/// Multiple Properties Factor - adjusts pricing for bulk orders
+/// Maps to Column S in VLOOKUP Tables
+/// Pricing adjustments for 1-6+ properties
+model MultiplePropertiesFactor {
+  id            String  @id @default(cuid())
+  propertyCount Int     @unique // Number of properties (1, 2, 3, 4, 5, 6+)
+  factor        Decimal @db.Decimal(5, 4) // Multiplier (usually discount)
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyCount])
+  @@index([isActive])
+  @@map("multiple_properties_factors")
+}
+
+// =============================================================================
+// DEPRECIATION CONFIGURATION
+// =============================================================================
+
+/// Depreciation rates by year (for MACRS calculations)
+/// Maps to depreciation rates from YbyY data sheet
+/// Year 1: 20%, Year 2: 32%, Year 3: 19.2%, etc.
+model DepreciationRate {
+  id            String  @id @default(cuid())
+  year          Int     // Year number (1, 2, 3, 4, 5, 6)
+  rate          Decimal @db.Decimal(6, 5) // Rate (0.20, 0.32, 0.192, etc.)
+  method        String  // "MACRS", "Straight Line", etc.
+  depreciationPeriod String // "39-year", "27.5-year", "5-year", etc.
+  description   String? @db.Text
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([year, method, depreciationPeriod])
+  @@index([method])
+  @@map("depreciation_rates")
+}
+
+// =============================================================================
+// AUDIT & HISTORY
+// =============================================================================
+
+/// Calculation History - tracks when quotes are recalculated
+/// Useful for debugging and auditing quote changes
+model CalculationHistory {
+  id            String  @id @default(cuid())
+  quoteId       String  // Not a foreign key to preserve history even if quote deleted
+  userId        String?
+
+  calculationType String // "create", "update", "recalculate"
+  inputData      Json    // Snapshot of input data
+  outputData     Json    // Snapshot of calculated outputs
+  factorsApplied Json    // Which factors were used
+  version        String? // Calculation logic version
+
+  executionTimeMs Int?   // How long the calculation took
+
+  createdAt DateTime @default(now())
+
+  @@index([quoteId])
+  @@index([createdAt])
+  @@map("calculation_history")
+}
+
+/// System Configuration - stores app-wide settings
+/// Can include base pricing formulas, feature flags, etc.
+model SystemConfig {
+  id            String  @id @default(cuid())
+  key           String  @unique // Config key (e.g., "base_pricing_formula", "enable_rush_fee")
+  value         Json    // Config value (can be string, number, object, etc.)
+  dataType      String  // "string", "number", "boolean", "json"
+  description   String? @db.Text
+  category      String? // "pricing", "features", "integration", etc.
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+  @@map("system_config")
+}

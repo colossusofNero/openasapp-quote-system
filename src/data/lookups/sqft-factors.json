@@ -1,0 +1,50 @@
+[
+  {
+    "squareFeet": 0,
+    "factor": 1.0
+  },
+  {
+    "squareFeet": 2500,
+    "factor": 1.02
+  },
+  {
+    "squareFeet": 5000,
+    "factor": 1.04
+  },
+  {
+    "squareFeet": 10000,
+    "factor": 1.06
+  },
+  {
+    "squareFeet": 15000,
+    "factor": 1.08
+  },
+  {
+    "squareFeet": 20000,
+    "factor": 1.1
+  },
+  {
+    "squareFeet": 30000,
+    "factor": 1.12
+  },
+  {
+    "squareFeet": 35000,
+    "factor": 1.14
+  },
+  {
+    "squareFeet": 40000,
+    "factor": 1.16
+  },
+  {
+    "squareFeet": 45000,
+    "factor": 1.18
+  },
+  {
+    "squareFeet": 50000,
+    "factor": 1.2
+  },
+  {
+    "squareFeet": "55000+",
+    "factor": 1.22
+  }
+]

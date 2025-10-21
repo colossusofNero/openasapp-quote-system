@@ -1,0 +1,52 @@
+[
+  {
+    "propertyType": "Industrial",
+    "code": 1,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Medical",
+    "code": 2,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Office",
+    "code": 3,
+    "depreciationMethod": 1
+  },
+  {
+    "propertyType": "Other",
+    "code": 4,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Restaurant",
+    "code": 5,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Retail",
+    "code": 6,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Warehouse",
+    "code": 7,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Multi-Family",
+    "code": 8,
+    "depreciationMethod": 2
+  },
+  {
+    "propertyType": "Residential/LTR",
+    "code": 9,
+    "depreciationMethod": 1
+  },
+  {
+    "propertyType": "Short-Term Rental",
+    "code": 10,
+    "depreciationMethod": 2
+  }
+]

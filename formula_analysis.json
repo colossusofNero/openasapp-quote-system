@@ -1,0 +1,698 @@
+{
+  "equation_sheet": {
+    "C21": {
+      "formula": "=A21*N22*N19*N25*N28*N31*N34",
+      "value": "=A21*N22*N19*N25*N28*N31*N34"
+    },
+    "C51": {
+      "formula": "=C43/C50",
+      "value": "=C43/C50"
+    },
+    "AB26": {
+      "formula": "=SUM(AB21:AB25)",
+      "value": "=SUM(AB21:AB25)"
+    },
+    "S4": {
+      "formula": "=MAX(S3,T2)",
+      "value": "=MAX(S3,T2)"
+    },
+    "S2": {
+      "formula": "=VLOOKUP('Input Sheet'!T3,'VLOOKUP Tables'!Y4:Z10,2,FALSE)",
+      "row": 2,
+      "col": 19
+    },
+    "T2": {
+      "formula": "='Input Sheet'!U3",
+      "row": 2,
+      "col": 20
+    },
+    "S3": {
+      "formula": "='Input Sheet'!B3*'Equation Sheet'!S2",
+      "row": 3,
+      "col": 19
+    },
+    "T15": {
+      "formula": "=$Q$15+S15",
+      "row": 15,
+      "col": 20
+    },
+    "U15": {
+      "formula": "=IF(T15>1500,1500,T15)",
+      "row": 15,
+      "col": 21
+    },
+    "V15": {
+      "formula": "=IF('Input Sheet'!F3<2400,'Equation Sheet'!U15,'Equation Sheet'!U16)",
+      "row": 15,
+      "col": 22
+    },
+    "W15": {
+      "formula": "=IF('Input Sheet'!J6=1,'Equation Sheet'!V15,'Equation Sheet'!V16)",
+      "row": 15,
+      "col": 23
+    },
+    "Y15": {
+      "formula": "=W15+X15",
+      "row": 15,
+      "col": 25
+    },
+    "AA15": {
+      "formula": "=Y15+Z15",
+      "row": 15,
+      "col": 27
+    },
+    "S16": {
+      "formula": "=R16*'Input Sheet'!$F$3",
+      "row": 16,
+      "col": 19
+    },
+    "T16": {
+      "formula": "=$Q$15+S16",
+      "row": 16,
+      "col": 20
+    },
+    "U16": {
+      "formula": "=IF(T16>1500,1500,T16)",
+      "row": 16,
+      "col": 21
+    },
+    "V16": {
+      "formula": "=MAX(V19,V18,V17)",
+      "row": 16,
+      "col": 22
+    },
+    "S17": {
+      "formula": "=R17*'Input Sheet'!$F$3",
+      "row": 17,
+      "col": 19
+    },
+    "T17": {
+      "formula": "=$Q$15+S17",
+      "row": 17,
+      "col": 20
+    },
+    "U17": {
+      "formula": "=IF(T17>1500,1500,T17)",
+      "row": 17,
+      "col": 21
+    },
+    "V17": {
+      "formula": "=IF(AND('Input Sheet'!$F$3>1,'Input Sheet'!$F$3<99999),'Equation Sheet'!U17,0)",
+      "row": 17,
+      "col": 22
+    },
+    "S18": {
+      "formula": "=R18*'Input Sheet'!$F$3",
+      "row": 18,
+      "col": 19
+    },
+    "T18": {
+      "formula": "=$Q$15+S18",
+      "row": 18,
+      "col": 20
+    },
+    "U18": {
+      "formula": "=IF(T18>1500,1500,T18)",
+      "row": 18,
+      "col": 21
+    },
+    "V18": {
+      "formula": "=IF(AND('Input Sheet'!$F$3>100000,'Input Sheet'!$F$3<299999),'Equation Sheet'!U18,0)",
+      "row": 18,
+      "col": 22
+    },
+    "N19": {
+      "formula": "=VLOOKUP('Input Sheet'!$B$3, 'VLOOKUP Tables'!A4:B15, 2, TRUE)",
+      "row": 19,
+      "col": 14
+    },
+    "S19": {
+      "formula": "=R19*'Input Sheet'!$F$3",
+      "row": 19,
+      "col": 19
+    },
+    "T19": {
+      "formula": "=$Q$15+S19",
+      "row": 19,
+      "col": 20
+    },
+    "U19": {
+      "formula": "=IF(T19>1500,1500,T19)",
+      "row": 19,
+      "col": 21
+    },
+    "V19": {
+      "formula": "=IF('Input Sheet'!$F$3>300000,'Equation Sheet'!U19,0)",
+      "row": 19,
+      "col": 22
+    },
+    "A20": {
+      "formula": "='Input Sheet'!B3+'Input Sheet'!AA3",
+      "row": 20,
+      "col": 1
+    },
+    "A21": {
+      "formula": "=(A20*0.0572355*0.25*0.08)+4000",
+      "row": 21,
+      "col": 1
+    },
+    "AC21": {
+      "formula": "=AB21/AB26",
+      "row": 21,
+      "col": 29
+    },
+    "D22": {
+      "formula": "=C21*N37",
+      "row": 22,
+      "col": 4
+    },
+    "N22": {
+      "formula": "=VLOOKUP('Input Sheet'!$D$3, 'VLOOKUP Tables'!D4:E15, 2, TRUE)",
+      "row": 22,
+      "col": 14
+    },
+    "AB22": {
+      "formula": "=Z15",
+      "row": 22,
+      "col": 28
+    },
+    "AC22": {
+      "formula": "=1-AC21",
+      "row": 22,
+      "col": 29
+    },
+    "D23": {
+      "formula": "=C21*N38",
+      "row": 23,
+      "col": 4
+    },
+    "AB23": {
+      "formula": "=X15",
+      "row": 23,
+      "col": 28
+    },
+    "AB24": {
+      "formula": "=W15",
+      "row": 24,
+      "col": 28
+    },
+    "N25": {
+      "formula": "=VLOOKUP('Input Sheet'!$F$3, 'VLOOKUP Tables'!G4:H15, 2, TRUE)",
+      "row": 25,
+      "col": 14
+    },
+    "N28": {
+      "formula": "=VLOOKUP('Input Sheet'!H3,'VLOOKUP Tables'!J4:K15,2,TRUE)",
+      "row": 28,
+      "col": 14
+    },
+    "N31": {
+      "formula": "=VLOOKUP('Input Sheet'!$J$3, 'VLOOKUP Tables'!M4:N13, 2, FALSE)",
+      "row": 31,
+      "col": 14
+    },
+    "N34": {
+      "formula": "=VLOOKUP('Input Sheet'!$L$3, 'VLOOKUP Tables'!P4:Q15, 2, FALSE)",
+      "row": 34,
+      "col": 14
+    },
+    "N37": {
+      "formula": "=VLOOKUP('Input Sheet'!$N$3, 'VLOOKUP Tables'!S4:T15, 2, FALSE)",
+      "row": 37,
+      "col": 14
+    },
+    "A40": {
+      "formula": "='Input Sheet'!B9",
+      "row": 40,
+      "col": 1
+    },
+    "N40": {
+      "formula": "='Input Sheet'!$N$3",
+      "row": 40,
+      "col": 14
+    },
+    "C46": {
+      "formula": "=A40-C42",
+      "row": 46,
+      "col": 3
+    },
+    "C47": {
+      "formula": "=C46*0.001",
+      "row": 47,
+      "col": 3
+    },
+    "C48": {
+      "formula": "=C47*-C44",
+      "row": 48,
+      "col": 3
+    },
+    "C49": {
+      "formula": "=2.71828183^(C48)",
+      "row": 49,
+      "col": 3
+    },
+    "C50": {
+      "formula": "=1+C49",
+      "row": 50,
+      "col": 3
+    }
+  },
+  "input_sheet": {
+    "B9": {
+      "formula": "='Equation Sheet'!C21",
+      "description": "Cell B9"
+    },
+    "B14": {
+      "formula": "='Equation Sheet'!C51",
+      "description": "Cell B14"
+    },
+    "B15": {
+      "formula": "=IF(B14>D11,B14,D11)",
+      "description": "Cell B15"
+    },
+    "B17": {
+      "formula": "=IF(MIN(B9,B14,D11)<D14,D14,MIN(B9,B14,D11))",
+      "description": "Cell B17"
+    },
+    "D17": {
+      "formula": "=B17*1.1/2",
+      "description": "Cell D17"
+    },
+    "F17": {
+      "formula": "=B17*1.2",
+      "description": "Cell F17"
+    },
+    "D11": {
+      "formula": "='Equation Sheet'!D22",
+      "description": "Cell D11"
+    },
+    "D14": {
+      "formula": "='Equation Sheet'!AB26",
+      "description": "Cell D14"
+    },
+    "Y3": {
+      "formula": "=VLOOKUP('Input Sheet'!X3,'VLOOKUP Tables'!AA4:AB5,2,FALSE)",
+      "row": 3,
+      "col": 25
+    },
+    "AD3": {
+      "formula": "=VLOOKUP('Input Sheet'!AC3,'VLOOKUP Tables'!AG4:AH5,2,FALSE)",
+      "row": 3,
+      "col": 30
+    },
+    "J5": {
+      "formula": "=VLOOKUP($J$3,'VLOOKUP Tables'!$M$21:$N$30,2,)",
+      "row": 5,
+      "col": 10
+    },
+    "T5": {
+      "formula": "=IF(T3='VLOOKUP Tables'!Y10,TRUE,FALSE)",
+      "row": 5,
+      "col": 20
+    },
+    "J6": {
+      "formula": "=VLOOKUP($J$3,'VLOOKUP Tables'!$M$21:$O$30,3,)",
+      "row": 6,
+      "col": 10
+    },
+    "Z6": {
+      "formula": "=_xlfn.XLOOKUP(Z3,'VLOOKUP Tables'!AE4:AE5,'VLOOKUP Tables'!AF4:AF5,FALSE)",
+      "row": 6,
+      "col": 26
+    },
+    "D9": {
+      "formula": "='Equation Sheet'!D21",
+      "row": 9,
+      "col": 4
+    },
+    "D15": {
+      "formula": "=IF(D14>D11,D14,D11)",
+      "row": 15,
+      "col": 4
+    },
+    "B19": {
+      "formula": "=B17",
+      "row": 19,
+      "col": 2
+    },
+    "D19": {
+      "formula": "=D17*2",
+      "row": 19,
+      "col": 4
+    },
+    "F19": {
+      "formula": "=D19*AL3",
+      "row": 19,
+      "col": 6
+    },
+    "H19": {
+      "formula": "='Equation Sheet'!C21+AI3",
+      "row": 19,
+      "col": 8
+    },
+    "D20": {
+      "formula": "=(B19*B20)+AI3",
+      "row": 20,
+      "col": 4
+    },
+    "F20": {
+      "formula": "=B17*AL3",
+      "row": 20,
+      "col": 6
+    },
+    "D21": {
+      "formula": "=FLOOR(D20,100)",
+      "row": 21,
+      "col": 4
+    },
+    "F21": {
+      "formula": "=F17*AL3",
+      "row": 21,
+      "col": 6
+    },
+    "D22": {
+      "formula": "=D21+AN3",
+      "row": 22,
+      "col": 4
+    },
+    "F23": {
+      "formula": "='Equation Sheet'!AB20",
+      "row": 23,
+      "col": 6
+    }
+  },
+  "vlookup_tables": {
+    "cost_basis": [
+      {
+        "key": "Cost Basis",
+        "factor": "Cost Basis Factor"
+      },
+      {
+        "key": 0,
+        "factor": 1
+      },
+      {
+        "key": 250000,
+        "factor": 1.01
+      },
+      {
+        "key": 500000,
+        "factor": 1.02
+      },
+      {
+        "key": 750000,
+        "factor": 1.05
+      },
+      {
+        "key": 1000000,
+        "factor": 1.075
+      },
+      {
+        "key": 1250000,
+        "factor": 1.1
+      },
+      {
+        "key": 1500000,
+        "factor": 1.25
+      },
+      {
+        "key": 2000000,
+        "factor": 1.3
+      },
+      {
+        "key": 3000000,
+        "factor": 1.35
+      },
+      {
+        "key": 5000000,
+        "factor": 1.4
+      },
+      {
+        "key": 7500000,
+        "factor": 1.45
+      },
+      {
+        "key": 10000000,
+        "factor": 1.5
+      }
+    ],
+    "zip_code": [
+      {
+        "key": "Zip Code",
+        "factor": "Zip Code Factor"
+      },
+      {
+        "key": 0,
+        "factor": 1.11
+      },
+      {
+        "key": 10000,
+        "factor": 1.1
+      },
+      {
+        "key": 20000,
+        "factor": 1.09
+      },
+      {
+        "key": 30000,
+        "factor": 1.08
+      },
+      {
+        "key": 40000,
+        "factor": 1.07
+      },
+      {
+        "key": 50000,
+        "factor": 1.06
+      },
+      {
+        "key": 60000,
+        "factor": 1.04
+      },
+      {
+        "key": 70000,
+        "factor": 1.02
+      },
+      {
+        "key": 80000,
+        "factor": 1
+      },
+      {
+        "key": 90000,
+        "factor": 1.01
+      },
+      {
+        "key": 96100,
+        "factor": 1.1
+      },
+      {
+        "key": 99000,
+        "factor": 1.1
+      }
+    ],
+    "sqft": [
+      {
+        "key": "SqFt Building",
+        "factor": "SqFt Factor"
+      },
+      {
+        "key": 0,
+        "factor": 1
+      },
+      {
+        "key": 2500,
+        "factor": 1.02
+      },
+      {
+        "key": 5000,
+        "factor": 1.04
+      },
+      {
+        "key": 10000,
+        "factor": 1.06
+      },
+      {
+        "key": 15000,
+        "factor": 1.08
+      },
+      {
+        "key": 20000,
+        "factor": 1.1
+      },
+      {
+        "key": 30000,
+        "factor": 1.12
+      },
+      {
+        "key": 35000,
+        "factor": 1.14
+      },
+      {
+        "key": 40000,
+        "factor": 1.16
+      },
+      {
+        "key": 45000,
+        "factor": 1.18
+      },
+      {
+        "key": 50000,
+        "factor": 1.2
+      },
+      {
+        "key": "55000+",
+        "factor": 1.22
+      }
+    ],
+    "acres": [
+      {
+        "key": "Acres Land",
+        "factor": "Acres Factor"
+      },
+      {
+        "key": 0,
+        "factor": 0.75
+      },
+      {
+        "key": 0.25,
+        "factor": 0.8
+      },
+      {
+        "key": 0.5,
+        "factor": 0.85
+      },
+      {
+        "key": 1,
+        "factor": 0.9
+      },
+      {
+        "key": 2,
+        "factor": 0.95
+      },
+      {
+        "key": 3,
+        "factor": 1
+      },
+      {
+        "key": 4,
+        "factor": 1.05
+      },
+      {
+        "key": 5,
+        "factor": 1.1
+      },
+      {
+        "key": 6,
+        "factor": 1.15
+      },
+      {
+        "key": 7,
+        "factor": 1.2
+      },
+      {
+        "key": 8,
+        "factor": 1.25
+      },
+      {
+        "key": "9+",
+        "factor": 1.3
+      }
+    ],
+    "property_type": [
+      {
+        "key": "Prop Type",
+        "factor": "Prop Type Factor"
+      },
+      {
+        "key": "Industrial",
+        "factor": 1.01
+      },
+      {
+        "key": "Medical",
+        "factor": 1.01
+      },
+      {
+        "key": "Office",
+        "factor": 1
+      },
+      {
+        "key": "Other",
+        "factor": 1
+      },
+      {
+        "key": "Restaurant",
+        "factor": 1.01
+      },
+      {
+        "key": "Retail",
+        "factor": 0.85
+      },
+      {
+        "key": "Warehouse",
+        "factor": 0.4
+      },
+      {
+        "key": "Multi-Family",
+        "factor": 0.4
+      },
+      {
+        "key": "Residential/LTR",
+        "factor": 0.7
+      },
+      {
+        "key": "Short-Term Rental",
+        "factor": 0.7
+      }
+    ],
+    "floors": [
+      {
+        "key": "# Floors",
+        "factor": "# Floors Factor"
+      },
+      {
+        "key": 1,
+        "factor": 1
+      },
+      {
+        "key": 2,
+        "factor": 1
+      },
+      {
+        "key": 3,
+        "factor": 1.05
+      },
+      {
+        "key": 4,
+        "factor": 1.1
+      },
+      {
+        "key": 5,
+        "factor": 1.1
+      },
+      {
+        "key": 6,
+        "factor": 1.15
+      },
+      {
+        "key": 7,
+        "factor": 1.15
+      },
+      {
+        "key": 8,
+        "factor": 1.2
+      },
+      {
+        "key": 9,
+        "factor": 1.2
+      },
+      {
+        "key": 10,
+        "factor": 1.3
+      },
+      {
+        "key": 11,
+        "factor": 1.3
+      }
+    ]
+  }
+}

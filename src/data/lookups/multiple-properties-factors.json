@@ -1,0 +1,30 @@
+[
+  {
+    "propertyCount": 1,
+    "factor": 1.0
+  },
+  {
+    "propertyCount": 2,
+    "factor": 0.95
+  },
+  {
+    "propertyCount": 3,
+    "factor": 0.9
+  },
+  {
+    "propertyCount": 4,
+    "factor": 0.875
+  },
+  {
+    "propertyCount": 5,
+    "factor": 0.85
+  },
+  {
+    "propertyCount": 6,
+    "factor": 0.825
+  },
+  {
+    "propertyCount": "6+",
+    "factor": 0.8
+  }
+]

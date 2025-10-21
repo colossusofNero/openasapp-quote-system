@@ -1,0 +1,50 @@
+[
+  {
+    "zipCode": 0,
+    "factor": 1.11
+  },
+  {
+    "zipCode": 10000,
+    "factor": 1.1
+  },
+  {
+    "zipCode": 20000,
+    "factor": 1.09
+  },
+  {
+    "zipCode": 30000,
+    "factor": 1.08
+  },
+  {
+    "zipCode": 40000,
+    "factor": 1.07
+  },
+  {
+    "zipCode": 50000,
+    "factor": 1.06
+  },
+  {
+    "zipCode": 60000,
+    "factor": 1.04
+  },
+  {
+    "zipCode": 70000,
+    "factor": 1.02
+  },
+  {
+    "zipCode": 80000,
+    "factor": 1.0
+  },
+  {
+    "zipCode": 90000,
+    "factor": 1.01
+  },
+  {
+    "zipCode": 96100,
+    "factor": 1.1
+  },
+  {
+    "zipCode": 99000,
+    "factor": 1.1
+  }
+]

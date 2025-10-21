@@ -1,0 +1,42 @@
+[
+  {
+    "propertyType": "Industrial",
+    "factor": 1.01
+  },
+  {
+    "propertyType": "Medical",
+    "factor": 1.01
+  },
+  {
+    "propertyType": "Office",
+    "factor": 1.0
+  },
+  {
+    "propertyType": "Other",
+    "factor": 1.0
+  },
+  {
+    "propertyType": "Restaurant",
+    "factor": 1.01
+  },
+  {
+    "propertyType": "Retail",
+    "factor": 0.85
+  },
+  {
+    "propertyType": "Warehouse",
+    "factor": 0.4
+  },
+  {
+    "propertyType": "Multi-Family",
+    "factor": 0.4
+  },
+  {
+    "propertyType": "Residential/LTR",
+    "factor": 0.7
+  },
+  {
+    "propertyType": "Short-Term Rental",
+    "factor": 0.7
+  }
+]

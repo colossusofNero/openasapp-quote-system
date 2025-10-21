@@ -1,0 +1,760 @@
+openapi: 3.0.3
+info:
+  title: OpenAsApp Quote API
+  description: |
+    API for generating cost segregation quotes for commercial and residential properties.
+
+    This API replicates the Excel-based quote generation system with RCGV and Pro quote types.
+    It supports real-time calculations, quote management, and integrates with ChatGPT actions.
+
+    **Features:**
+    - Real-time quote calculations based on property characteristics
+    - RCGV and Pro quote types
+    - Multiple payment options (upfront, 50/50, monthly)
+    - Year-by-year depreciation schedules
+    - Lookup factor transparency
+
+    **Authentication:**
+    Most endpoints require authentication via NextAuth.js session or Bearer token.
+    Calculate and factors endpoints are public for transparency.
+
+    **Rate Limits:**
+    - Authenticated: 1000 requests/hour
+    - Public: 100 requests/hour
+
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@openasapp.com
+    url: https://openasapp.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.openasapp.com/v1
+    description: Production server
+  - url: https://staging-api.openasapp.com/v1
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Local development server
+
+tags:
+  - name: quotes
+    description: Quote management operations
+  - name: calculations
+    description: Quote calculation operations (no database)
+  - name: factors
+    description: Pricing factors and lookup tables
+
+paths:
+  /quotes:
+    post:
+      tags:
+        - quotes
+      summary: Create a new quote
+      description: |
+        Creates a new cost segregation quote and saves it to the database.
+        Requires authentication. Returns the complete quote with calculations.
+      operationId: createQuote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteInput'
+            examples:
+              multiFamilyProperty:
+                summary: Multi-Family Property
+                value:
+                  purchasePrice: 2550000
+                  zipCode: "85260"
+                  sqFtBuilding: 1500
+                  acresLand: 0.78
+                  propertyType: "Multi-Family"
+                  numberOfFloors: 2
+                  multipleProperties: 1
+                  dateOfPurchase: "2024-01-15"
+                  taxYear: 2025
+                  yearBuilt: 2010
+                  capEx: 50000
+                  propertyOwnerName: "Acme Properties LLC"
+                  propertyAddress: "123 Main St, Scottsdale, AZ 85260"
+                  quoteType: "RCGV"
+                  rushFee: false
+              commercialOffice:
+                summary: Commercial Office Building
+                value:
+                  purchasePrice: 5000000
+                  zipCode: "90210"
+                  sqFtBuilding: 25000
+                  acresLand: 2.5
+                  propertyType: "Office"
+                  numberOfFloors: 5
+                  multipleProperties: 1
+                  dateOfPurchase: "2024-03-01"
+                  taxYear: 2024
+                  yearBuilt: 2015
+                  capEx: 100000
+                  propertyOwnerName: "Beverly Hills Office LLC"
+                  propertyAddress: "456 Rodeo Dr, Beverly Hills, CA 90210"
+                  quoteType: "Pro"
+                  rushFee: true
+      responses:
+        '201':
+          description: Quote created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                data:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  input:
+                    purchasePrice: 2550000
+                    zipCode: "85260"
+                    sqFtBuilding: 1500
+                    acresLand: 0.78
+                    propertyType: "Multi-Family"
+                    numberOfFloors: 2
+                    multipleProperties: 1
+                    dateOfPurchase: "2024-01-15"
+                    taxYear: 2025
+                    yearBuilt: 2010
+                    capEx: 50000
+                    propertyOwnerName: "Acme Properties LLC"
+                    propertyAddress: "123 Main St, Scottsdale, AZ 85260"
+                    quoteType: "RCGV"
+                    rushFee: false
+                  output:
+                    bidAmount: 38250
+                    landValue: 78000
+                    buildingValue: 2522000
+                    paymentOptions:
+                      upfront:
+                        amount: 36337.5
+                        discount: 5
+                      fiftyFifty:
+                        firstPayment: 21037.5
+                        secondPayment: 21037.5
+                        total: 42075
+                      monthly:
+                        monthlyAmount: 3825
+                        numberOfMonths: 12
+                        total: 45900
+                    appliedFactors:
+                      costBasisFactor: 1.3
+                      zipCodeFactor: 1.11
+                      sqFtFactor: 1.0
+                      acresFactor: 0.75
+                      propertyTypeFactor: 0.4
+                      floorsFactor: 1.0
+                    depreciationSummary:
+                      method: "27.5-year"
+                      year1: 504400
+                      year2: 807040
+                      year3: 484224
+                      year4: 290534.4
+                      year5: 290534.4
+                      year6: 145267.2
+                      totalTax: 755280
+                    quoteType: "RCGV"
+                    calculatedAt: "2024-10-20T12:00:00Z"
+                  status: "draft"
+                  createdAt: "2024-10-20T12:00:00Z"
+                  updatedAt: "2024-10-20T12:00:00Z"
+                  userId: "user_123"
+                meta:
+                  timestamp: "2024-10-20T12:00:00Z"
+                  version: "1.0"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    get:
+      tags:
+        - quotes
+      summary: List all quotes
+      description: |
+        Retrieves a paginated list of quotes for the authenticated user.
+        Supports filtering, sorting, and search.
+      operationId: listQuotes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          description: Filter by quote status
+          schema:
+            type: string
+            enum: [draft, sent, accepted, rejected, expired]
+        - name: quoteType
+          in: query
+          description: Filter by quote type
+          schema:
+            type: string
+            enum: [RCGV, Pro]
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [createdAt, updatedAt, bidAmount]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: search
+          in: query
+          description: Search by client name or property address
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of quotes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /quotes/{id}:
+    get:
+      tags:
+        - quotes
+      summary: Get a quote by ID
+      description: Retrieves a single quote by its UUID
+      operationId: getQuote
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Quote UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quote retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    patch:
+      tags:
+        - quotes
+      summary: Update a quote
+      description: |
+        Updates a quote's status or input data.
+        If input data is updated, the quote is automatically recalculated.
+      operationId: updateQuote
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Quote UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [draft, sent, accepted, rejected, expired]
+                input:
+                  $ref: '#/components/schemas/QuoteInput'
+            examples:
+              updateStatus:
+                summary: Update status only
+                value:
+                  status: "sent"
+              updateInput:
+                summary: Update input (triggers recalculation)
+                value:
+                  input:
+                    purchasePrice: 2750000
+                    capEx: 75000
+      responses:
+        '200':
+          description: Quote updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - quotes
+      summary: Delete a quote
+      description: Permanently deletes a quote
+      operationId: deleteQuote
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Quote UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quote deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /quotes/calculate:
+    post:
+      tags:
+        - calculations
+      summary: Calculate a quote without saving
+      description: |
+        Calculates a quote preview without saving to the database.
+        This endpoint is public and does not require authentication.
+        Perfect for ChatGPT integration and public quote estimators.
+      operationId: calculateQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculateQuoteInput'
+      responses:
+        '200':
+          description: Quote calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /quotes/factors:
+    get:
+      tags:
+        - factors
+      summary: Get all pricing factors
+      description: |
+        Retrieves all lookup tables and pricing factors used in calculations.
+        This endpoint is public for transparency. Useful for building dynamic forms
+        and educating users about how quotes are calculated.
+      operationId: getFactors
+      responses:
+        '200':
+          description: Factors retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                data:
+                  factors:
+                    costBasisFactors:
+                      - minValue: 0
+                        maxValue: 250000
+                        factor: 1.0
+                      - minValue: 250000
+                        maxValue: 1000000
+                        factor: 1.01
+                      - minValue: 1000000
+                        maxValue: 2000000
+                        factor: 1.075
+                      - minValue: 2000000
+                        maxValue: 10000000
+                        factor: 1.3
+                      - minValue: 10000000
+                        maxValue: null
+                        factor: 1.5
+                    zipCodeFactors:
+                      - minZip: 0
+                        maxZip: 69999
+                        factor: 1.0
+                      - minZip: 70000
+                        maxZip: 79999
+                        factor: 1.05
+                      - minZip: 80000
+                        maxZip: 89999
+                        factor: 1.08
+                      - minZip: 90000
+                        maxZip: 99999
+                        factor: 1.11
+                    propertyTypeFactors:
+                      Industrial: 1.01
+                      Medical: 1.01
+                      Office: 1.0
+                      Other: 1.0
+                      Restaurant: 1.01
+                      Retail: 0.85
+                      Warehouse: 0.4
+                      "Multi-Family": 0.4
+                      "Residential/LTR": 0.7
+                      "Short-Term Rental": 0.7
+                  metadata:
+                    description: "Pricing factors based on Excel workbook: Base Pricing27.1_Pro_SMART_RCGV.xlsx"
+                    version: "27.1"
+                    lastUpdated: "2025-10-20"
+                    source: "VLOOKUP Tables sheet"
+                meta:
+                  timestamp: "2024-10-20T12:00:00Z"
+                  version: "1.0"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    QuoteInput:
+      type: object
+      required:
+        - purchasePrice
+        - zipCode
+        - sqFtBuilding
+        - acresLand
+        - propertyType
+        - numberOfFloors
+        - dateOfPurchase
+        - taxYear
+        - yearBuilt
+        - propertyOwnerName
+        - propertyAddress
+      properties:
+        purchasePrice:
+          type: number
+          minimum: 1
+          maximum: 100000000
+          description: Property purchase price in USD
+          example: 2550000
+        zipCode:
+          type: string
+          pattern: '^\d{5}$'
+          description: 5-digit ZIP code
+          example: "85260"
+        sqFtBuilding:
+          type: number
+          minimum: 1
+          maximum: 1000000
+          description: Building square footage
+          example: 1500
+        acresLand:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Land acreage
+          example: 0.78
+        propertyType:
+          type: string
+          enum:
+            - Industrial
+            - Medical
+            - Office
+            - Other
+            - Restaurant
+            - Retail
+            - Warehouse
+            - Multi-Family
+            - Residential/LTR
+            - Short-Term Rental
+          description: Type of property
+          example: "Multi-Family"
+        numberOfFloors:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Number of floors in the building
+          example: 2
+        multipleProperties:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Number of properties being quoted (for volume discount)
+          example: 1
+        dateOfPurchase:
+          type: string
+          format: date
+          description: Date the property was purchased
+          example: "2024-01-15"
+        taxYear:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+          description: Tax year for the quote
+          example: 2025
+        yearBuilt:
+          type: integer
+          minimum: 1800
+          maximum: 2100
+          description: Year the property was built
+          example: 2010
+        capEx:
+          type: number
+          minimum: 0
+          default: 0
+          description: Capital expenditures/improvements
+          example: 50000
+        accumulated1031Depreciation:
+          type: number
+          minimum: 0
+          default: 0
+          description: Accumulated depreciation from 1031 exchange
+          example: 0
+        propertyOwnerName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Name of the property owner
+          example: "Acme Properties LLC"
+        propertyAddress:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Full property address
+          example: "123 Main St, Scottsdale, AZ 85260"
+        quoteType:
+          type: string
+          enum: [RCGV, Pro]
+          default: RCGV
+          description: Type of quote (RCGV or Pro)
+          example: "RCGV"
+        rushFee:
+          type: boolean
+          default: false
+          description: Whether to apply rush fee (15% markup)
+          example: false
+        notes:
+          type: string
+          maxLength: 2000
+          description: Optional notes
+          example: "Client requested expedited service"
+
+    CalculateQuoteInput:
+      type: object
+      description: Subset of QuoteInput for calculations only (no client info required)
+      required:
+        - purchasePrice
+        - zipCode
+        - sqFtBuilding
+        - acresLand
+        - propertyType
+        - numberOfFloors
+        - dateOfPurchase
+        - taxYear
+        - yearBuilt
+      properties:
+        purchasePrice:
+          type: number
+          example: 2550000
+        zipCode:
+          type: string
+          example: "85260"
+        sqFtBuilding:
+          type: number
+          example: 1500
+        acresLand:
+          type: number
+          example: 0.78
+        propertyType:
+          type: string
+          example: "Multi-Family"
+        numberOfFloors:
+          type: integer
+          example: 2
+        multipleProperties:
+          type: integer
+          default: 1
+          example: 1
+        dateOfPurchase:
+          type: string
+          format: date
+          example: "2024-01-15"
+        taxYear:
+          type: integer
+          example: 2025
+        yearBuilt:
+          type: integer
+          example: 2010
+        capEx:
+          type: number
+          default: 0
+          example: 50000
+        accumulated1031Depreciation:
+          type: number
+          default: 0
+          example: 0
+        quoteType:
+          type: string
+          enum: [RCGV, Pro]
+          default: RCGV
+          example: "RCGV"
+        rushFee:
+          type: boolean
+          default: false
+          example: false
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        data:
+          type: object
+          description: Response data
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              description: Additional error details
+        meta:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+              description: Response timestamp
+            version:
+              type: string
+              description: API version
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Invalid request data"
+              details:
+                - field: "purchasePrice"
+                  message: "Purchase price must be positive"
+                  code: "too_small"
+            meta:
+              timestamp: "2024-10-20T12:00:00Z"
+              version: "1.0"
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Authentication required"
+            meta:
+              timestamp: "2024-10-20T12:00:00Z"
+              version: "1.0"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "Quote not found"
+            meta:
+              timestamp: "2024-10-20T12:00:00Z"
+              version: "1.0"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "An error occurred"
+            meta:
+              timestamp: "2024-10-20T12:00:00Z"
+              version: "1.0"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from NextAuth.js authentication.
+        Include in Authorization header: `Authorization: Bearer <token>`
