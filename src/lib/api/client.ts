@@ -51,14 +51,14 @@ class ApiClient {
 
   // Quote endpoints
   async calculateQuote(input: any) {
-    return this.request("/quotes/calculate", {
+    return this.request<any>("/quotes/calculate", {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
   async createQuote(input: QuoteInput) {
-    return this.request("/quotes", {
+    return this.request<any>("/quotes", {
       method: "POST",
       body: JSON.stringify(input),
     });
@@ -73,28 +73,28 @@ class ApiClient {
         }
       });
     }
-    return this.request(`/quotes?${params.toString()}`);
+    return this.request<any>(`/quotes?${params.toString()}`);
   }
 
   async getQuote(id: string) {
-    return this.request(`/quotes/${id}`);
+    return this.request<any>(`/quotes/${id}`);
   }
 
   async updateQuote(id: string, input: Partial<QuoteInput>) {
-    return this.request(`/quotes/${id}`, {
+    return this.request<any>(`/quotes/${id}`, {
       method: "PATCH",
       body: JSON.stringify(input),
     });
   }
 
   async deleteQuote(id: string) {
-    return this.request(`/quotes/${id}`, {
+    return this.request<any>(`/quotes/${id}`, {
       method: "DELETE",
     });
   }
 
   async getFactors() {
-    return this.request("/quotes/factors");
+    return this.request<any>("/quotes/factors");
   }
 }
 

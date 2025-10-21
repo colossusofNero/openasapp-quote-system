@@ -14,13 +14,13 @@ import { formatCurrency, formatDateShort } from "@/lib/utils";
 
 export default function QuotesPage() {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<string>("");
+  const [status, setStatus] = useState<"draft" | "sent" | "accepted" | "rejected" | "expired" | "">("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data: quotesResponse, isLoading } = useQuotes({
     search: search || undefined,
-    status: status || undefined,
+    status: (status || undefined) as "draft" | "sent" | "accepted" | "rejected" | "expired" | undefined,
     sortBy: sortBy as any,
     sortOrder,
   });
@@ -78,7 +78,7 @@ export default function QuotesPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Select value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
               <option value="">All Statuses</option>
               <option value="draft">Draft</option>
               <option value="sent">Sent</option>

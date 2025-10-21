@@ -693,6 +693,7 @@ const defaultConfig: CalculatorConfig = {
   paymentMultipliers: PAYMENT_MULTIPLIERS,
   rushFeeAmount: 1500,
   depreciationConfig: {
+    method: 39,
     rates: MACRS_RATES,
     yearsToProject: 39,
     bonusDepreciationRate: 0.8,

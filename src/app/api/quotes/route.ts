@@ -54,8 +54,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const input = result.data;
 
   try {
+    // Map schema fields to calculator fields
+    const calculatorInput = {
+      ...input,
+      purchaseDate: new Date(input.dateOfPurchase),
+      productType: input.quoteType,
+      isRushOrder: input.rushFee,
+    };
+
     // Calculate the quote using the QuoteCalculator
-    const calculatedQuote = await quoteCalculator.calculate(input);
+    const calculatedQuote = await quoteCalculator.calculate(calculatorInput as any);
 
     // TODO: Save to database using Prisma
     // const savedQuote = await prisma.quote.create({

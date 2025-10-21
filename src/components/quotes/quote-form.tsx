@@ -46,8 +46,8 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<QuoteInput>({
-    resolver: zodResolver(QuoteInputSchema),
+  } = useForm<any>({
+    resolver: zodResolver(QuoteInputSchema) as any,
     defaultValues: initialData || {
       multipleProperties: 1,
       capEx: 0,
@@ -127,7 +127,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('purchasePrice', { valueAsNumber: true })}
                 />
                 {errors.purchasePrice && (
-                  <p className="text-sm text-red-600">{errors.purchasePrice.message}</p>
+                  <p className="text-sm text-red-600">{errors.purchasePrice?.message as string}</p>
                 )}
               </div>
 
@@ -135,7 +135,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                 <Label htmlFor="zipCode">ZIP Code</Label>
                 <Input id="zipCode" {...register('zipCode')} />
                 {errors.zipCode && (
-                  <p className="text-sm text-red-600">{errors.zipCode.message}</p>
+                  <p className="text-sm text-red-600">{errors.zipCode?.message as string}</p>
                 )}
               </div>
 
@@ -147,7 +147,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('sqFtBuilding', { valueAsNumber: true })}
                 />
                 {errors.sqFtBuilding && (
-                  <p className="text-sm text-red-600">{errors.sqFtBuilding.message}</p>
+                  <p className="text-sm text-red-600">{errors.sqFtBuilding?.message as string}</p>
                 )}
               </div>
 
@@ -160,7 +160,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('acresLand', { valueAsNumber: true })}
                 />
                 {errors.acresLand && (
-                  <p className="text-sm text-red-600">{errors.acresLand.message}</p>
+                  <p className="text-sm text-red-600">{errors.acresLand?.message as string}</p>
                 )}
               </div>
 
@@ -175,7 +175,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   ))}
                 </Select>
                 {errors.propertyType && (
-                  <p className="text-sm text-red-600">{errors.propertyType.message}</p>
+                  <p className="text-sm text-red-600">{errors.propertyType?.message as string}</p>
                 )}
               </div>
 
@@ -187,7 +187,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('numberOfFloors', { valueAsNumber: true })}
                 />
                 {errors.numberOfFloors && (
-                  <p className="text-sm text-red-600">{errors.numberOfFloors.message}</p>
+                  <p className="text-sm text-red-600">{errors.numberOfFloors?.message as string}</p>
                 )}
               </div>
 
@@ -199,7 +199,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('yearBuilt', { valueAsNumber: true })}
                 />
                 {errors.yearBuilt && (
-                  <p className="text-sm text-red-600">{errors.yearBuilt.message}</p>
+                  <p className="text-sm text-red-600">{errors.yearBuilt?.message as string}</p>
                 )}
               </div>
 
@@ -211,7 +211,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('dateOfPurchase')}
                 />
                 {errors.dateOfPurchase && (
-                  <p className="text-sm text-red-600">{errors.dateOfPurchase.message}</p>
+                  <p className="text-sm text-red-600">{errors.dateOfPurchase?.message as string}</p>
                 )}
               </div>
 
@@ -223,7 +223,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('taxYear', { valueAsNumber: true })}
                 />
                 {errors.taxYear && (
-                  <p className="text-sm text-red-600">{errors.taxYear.message}</p>
+                  <p className="text-sm text-red-600">{errors.taxYear?.message as string}</p>
                 )}
               </div>
             </div>
@@ -254,7 +254,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('capEx', { valueAsNumber: true })}
                 />
                 {errors.capEx && (
-                  <p className="text-sm text-red-600">{errors.capEx.message}</p>
+                  <p className="text-sm text-red-600">{errors.capEx?.message as string}</p>
                 )}
               </div>
 
@@ -266,7 +266,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                   {...register('multipleProperties', { valueAsNumber: true })}
                 />
                 {errors.multipleProperties && (
-                  <p className="text-sm text-red-600">{errors.multipleProperties.message}</p>
+                  <p className="text-sm text-red-600">{errors.multipleProperties?.message as string}</p>
                 )}
               </div>
 
@@ -315,7 +315,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
               <Label htmlFor="propertyOwnerName">Property Owner Name</Label>
               <Input id="propertyOwnerName" {...register('propertyOwnerName')} />
               {errors.propertyOwnerName && (
-                <p className="text-sm text-red-600">{errors.propertyOwnerName.message}</p>
+                <p className="text-sm text-red-600">{errors.propertyOwnerName?.message as string}</p>
               )}
             </div>
 
@@ -323,7 +323,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
               <Label htmlFor="propertyAddress">Property Address</Label>
               <Input id="propertyAddress" {...register('propertyAddress')} />
               {errors.propertyAddress && (
-                <p className="text-sm text-red-600">{errors.propertyAddress.message}</p>
+                <p className="text-sm text-red-600">{errors.propertyAddress?.message as string}</p>
               )}
             </div>
 

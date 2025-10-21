@@ -49,7 +49,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   try {
     // Calculate the quote using the QuoteCalculator
-    const calculatedQuote = await quoteCalculator.calculate(input);
+    // Add required fields with placeholder values for calculation-only endpoint
+    const fullInput = {
+      ...input,
+      purchaseDate: new Date(input.dateOfPurchase),
+      propertyOwnerName: "Preview",
+      propertyAddress: "Preview Address",
+      productType: input.quoteType || "RCGV",
+      isRushOrder: input.rushFee,
+    };
+    const calculatedQuote = await quoteCalculator.calculate(fullInput as any);
 
     // Return calculated results without saving
     return successResponse({

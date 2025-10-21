@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { QuoteInput, QuoteListQuery } from "@/lib/validations/quote.schema";
 import { QuotesListResponse, QuoteDetailResponse, CalculateQuoteResponse } from "./types";
+import { ApiResponse } from "./client";
 import toast from "react-hot-toast";
 
 // Query keys
@@ -15,7 +16,7 @@ export const queryKeys = {
 
 // Fetch all quotes
 export function useQuotes(query?: Partial<QuoteListQuery>) {
-  return useQuery<{ data: QuotesListResponse }>({
+  return useQuery<ApiResponse<QuotesListResponse>>({
     queryKey: [...queryKeys.quotes, query],
     queryFn: () => apiClient.getQuotes(query as QuoteListQuery),
   });
@@ -23,7 +24,7 @@ export function useQuotes(query?: Partial<QuoteListQuery>) {
 
 // Fetch single quote
 export function useQuote(id: string) {
-  return useQuery<{ data: QuoteDetailResponse }>({
+  return useQuery<ApiResponse<QuoteDetailResponse>>({
     queryKey: queryKeys.quote(id),
     queryFn: () => apiClient.getQuote(id),
     enabled: !!id,
@@ -40,7 +41,7 @@ export function useFactors() {
 
 // Calculate quote (no saving)
 export function useCalculateQuote() {
-  return useMutation<{ data: CalculateQuoteResponse }, Error, any>({
+  return useMutation<ApiResponse<CalculateQuoteResponse>, Error, any>({
     mutationFn: (input: any) => apiClient.calculateQuote(input),
   });
 }
