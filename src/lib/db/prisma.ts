@@ -14,10 +14,21 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
+// Only create Prisma Client if DATABASE_URL is available
+// This prevents build errors when DATABASE_URL is not set
+const createPrismaClient = () => {
+  if (!process.env.DATABASE_URL) {
+    console.warn('DATABASE_URL is not set. Prisma Client will not be initialized.');
+    return null as any;
+  }
+
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+};
+
 // Create a single instance of Prisma Client
-export const prisma = global.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
+export const prisma = global.prisma || createPrismaClient();
 
 // In development, save the instance to the global object
 // This prevents creating new instances on every hot reload
@@ -26,7 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Graceful shutdown
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && prisma) {
   process.on('beforeExit', async () => {
     await prisma.$disconnect();
   });
