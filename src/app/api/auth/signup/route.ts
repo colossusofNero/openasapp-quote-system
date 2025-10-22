@@ -16,6 +16,10 @@
  */
 
 import { NextRequest } from 'next/server';
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/db/prisma';
