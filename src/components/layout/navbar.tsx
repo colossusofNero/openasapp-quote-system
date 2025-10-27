@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const pathname = usePathname();
-  const sessionData = useSession();
-  const session = sessionData?.data;
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard" },
+    { name: "New Quote", href: "/quotes/new" },
     { name: "Quotes", href: "/quotes" },
   ];
 
@@ -42,21 +39,9 @@ export function Navbar() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {session?.user && (
-              <>
-                <div className="hidden sm:block">
-                  <span className="text-sm text-gray-700">
-                    {session.user.name || session.user.email}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => signOut({ callbackUrl: "/signin" })}
-                >
-                  Sign Out
-                </Button>
-              </>
-            )}
+            <span className="text-sm text-gray-600">
+              Free Cost Segregation Calculator
+            </span>
           </div>
         </div>
       </div>

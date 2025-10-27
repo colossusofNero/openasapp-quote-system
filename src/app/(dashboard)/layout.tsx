@@ -1,39 +1,8 @@
-"use client";
-
-import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { ReactNode } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { Spinner } from "@/components/ui/spinner";
-
-// Prevent static generation for dashboard routes
-export const dynamic = 'force-dynamic';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const sessionData = useSession();
-  const session = sessionData?.data;
-  const status = sessionData?.status || "loading";
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/signin");
-    }
-  }, [status, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />

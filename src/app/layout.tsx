@@ -6,8 +6,8 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "OpenAsApp - Quote Management System",
-  description: "Cost Segregation Quote Calculator and Management System",
+  title: "OpenAsApp - Free Cost Segregation Calculator",
+  description: "Free cost segregation analysis tool. Learn about cost segregation tax benefits and run unlimited quotes for your properties.",
 };
 
 export default function RootLayout({

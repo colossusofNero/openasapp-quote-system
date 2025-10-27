@@ -66,10 +66,8 @@ export const authOptions: NextAuthOptions = {
 
   // Customize pages
   pages: {
-    signIn: '/auth/signin',
-    signOut: '/auth/signout',
-    error: '/auth/error',
-    // newUser: '/auth/new-user', // Redirect new users here after first sign in
+    signIn: '/signin',
+    // signOut and error pages will use NextAuth defaults
   },
 
   // Configure callbacks

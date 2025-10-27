@@ -31,7 +31,11 @@
       "Bash(git push:*)",
       "Bash(npm run build:*)",
       "Bash(echo:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(xargs cat:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npm run prisma:seed:*)",
+      "Bash(npx prisma studio:*)"
     ],
     "deny": [],
     "ask": []
