@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { CardSkeleton, QuotesListSkeleton } from "@/components/ui/skeleton";
 import { formatDateWithTimezone } from "@/lib/utils";
 import { displayTotal, getQuoteDisplayName, getPropertyAddress, getStatusVariant, getStatusLabel } from "@/lib/utils/quote-utils";
 import { SavedQuote } from "@/lib/validations/quote.schema";
@@ -18,8 +19,39 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size="lg" />
+      <div className="space-y-8">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-gray-200 animate-pulse rounded" />
+            <div className="h-4 w-96 bg-gray-200 animate-pulse rounded" />
+          </div>
+          <div className="h-10 w-40 bg-gray-200 animate-pulse rounded" />
+        </div>
+
+        {/* Stats cards skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+
+        {/* Recent quotes skeleton */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-5 w-32 bg-gray-200 animate-pulse rounded" />
+                <div className="h-4 w-48 bg-gray-200 animate-pulse rounded" />
+              </div>
+              <div className="h-9 w-24 bg-gray-200 animate-pulse rounded" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <QuotesListSkeleton />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -68,15 +100,15 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Cost Segregation Calculator</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Cost Segregation Calculator</h1>
           <p className="text-muted-foreground mt-1">
             Free tool to calculate cost segregation tax benefits for your properties.
           </p>
         </div>
-        <Link href="/quotes/new">
-          <Button size="lg">Create New Quote</Button>
+        <Link href="/quotes/new" className="w-full sm:w-auto">
+          <Button size="lg" className="w-full sm:w-auto">Create New Quote</Button>
         </Link>
       </div>
 
@@ -220,9 +252,9 @@ export default function DashboardPage() {
               {quotes.map((quote: SavedQuote) => (
                 <div
                   key={quote.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1">
                     <p className="font-medium">{getQuoteDisplayName(quote)}</p>
                     <p className="text-sm text-muted-foreground">
                       {getPropertyAddress(quote)}
@@ -233,8 +265,8 @@ export default function DashboardPage() {
                       <span>{quote.output?.quoteType ?? '—'}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between sm:justify-end gap-4">
+                    <div className="sm:text-right">
                       <p className="font-semibold">
                         {displayTotal(quote)}
                       </p>

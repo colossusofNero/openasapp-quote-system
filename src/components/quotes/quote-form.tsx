@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { QuoteInputSchema, QuoteInput } from "@/lib/validations/quote.schema";
 import { useCreateQuote, useCalculateQuote } from "@/lib/api/hooks";
+import { useDebounce } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { FormField } from "@/components/ui/form-field";
+import { SectionHeader } from "@/components/ui/section-header";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { formatCurrency } from "@/lib/utils";
+import { Loader2Icon } from "lucide-react";
 
 const PROPERTY_TYPES = [
   'Industrial',
@@ -35,8 +39,8 @@ interface QuoteFormProps {
 
 export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [calculatedQuote, setCalculatedQuote] = useState<any>(null);
+  const [autoCalculateEnabled, setAutoCalculateEnabled] = useState(false);
 
   const createQuote = useCreateQuote();
   const calculateQuote = useCalculateQuote();
@@ -44,6 +48,7 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
   const {
     register,
     handleSubmit,
+    control,
     watch,
     formState: { errors },
   } = useForm<any>({
@@ -59,11 +64,42 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
 
   const formValues = watch();
 
+  // Debounce the purchase price to prevent excessive API calls during typing
+  // This improves performance by reducing network requests and calculations
+  const debouncedPurchasePrice = useDebounce(formValues.purchasePrice, 500);
+  const debouncedBuildingSize = useDebounce(formValues.sqFtBuilding, 500);
+
+  // Memoize whether the form has required data for calculation
+  const canAutoCalculate = useMemo(() => {
+    return !!(
+      formValues.purchasePrice &&
+      formValues.sqFtBuilding &&
+      formValues.propertyType &&
+      formValues.dateOfPurchase
+    );
+  }, [
+    formValues.purchasePrice,
+    formValues.sqFtBuilding,
+    formValues.propertyType,
+    formValues.dateOfPurchase,
+  ]);
+
+  // Auto-calculate when debounced values change (if enabled)
+  useEffect(() => {
+    if (autoCalculateEnabled && canAutoCalculate && debouncedPurchasePrice) {
+      calculateQuote.mutate(formValues, {
+        onSuccess: (response) => {
+          setCalculatedQuote(response.data);
+        },
+      });
+    }
+  }, [debouncedPurchasePrice, debouncedBuildingSize, autoCalculateEnabled, canAutoCalculate]);
+
   const handleCalculate = async () => {
     calculateQuote.mutate(formValues, {
       onSuccess: (response) => {
         setCalculatedQuote(response.data);
-        setStep(4);
+        setAutoCalculateEnabled(true); // Enable auto-recalculation after first manual calculation
       },
     });
   };
@@ -77,95 +113,207 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Progress Steps */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            {[1, 2, 3, 4].map((s) => (
-              <div
-                key={s}
-                className={`flex-1 ${s < 4 ? 'border-r' : ''}`}
-              >
-                <div className="flex items-center justify-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      s <= step
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {s}
-                  </div>
-                </div>
-                <p className="text-center text-xs mt-2">
-                  {s === 1 && 'Property'}
-                  {s === 2 && 'Additional'}
-                  {s === 3 && 'Client'}
-                  {s === 4 && 'Review'}
-                </p>
-              </div>
-            ))}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-5xl">
+      {/* Header Section */}
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-6">
+          <h1 className="text-3xl font-bold text-rcg-navy font-poppins">
+            RCGV Quote & Estimate
+          </h1>
+          <p className="text-rcg-text-gray mt-2">
+            Complete the information below to generate an accurate cost segregation quote
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Prospect Information Section */}
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-6">
+          <SectionHeader
+            title="Prospect Information"
+            description="Client and property owner details"
+          />
+
+          <div className="space-y-5">
+            <FormField
+              label="Client Name"
+              htmlFor="propertyOwnerName"
+              required
+              error={errors.propertyOwnerName?.message as string}
+              helpText="Enter the full legal name of the property owner or client"
+            >
+              <Input
+                id="propertyOwnerName"
+                placeholder="Enter client name"
+                {...register('propertyOwnerName')}
+              />
+            </FormField>
           </div>
         </CardContent>
       </Card>
 
-      {/* Step 1: Property Details */}
-      {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Property Details</CardTitle>
-            <CardDescription>Enter the basic property information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="purchasePrice">Purchase Price ($)</Label>
+      {/* Property Information Section */}
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-6">
+          <SectionHeader
+            title="Property Information"
+            description="Location and tax details"
+          />
+
+          <div className="space-y-5">
+            <FormField
+              label="Property Address"
+              htmlFor="propertyAddress"
+              required
+              error={errors.propertyAddress?.message as string}
+              helpText="Full street address of the property"
+            >
+              <Input
+                id="propertyAddress"
+                placeholder="123 Main Street, City, State"
+                {...register('propertyAddress')}
+              />
+            </FormField>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField
+                label="ZIP Code"
+                htmlFor="zipCode"
+                required
+                error={errors.zipCode?.message as string}
+              >
                 <Input
-                  id="purchasePrice"
-                  type="number"
-                  {...register('purchasePrice', { valueAsNumber: true })}
+                  id="zipCode"
+                  placeholder="12345"
+                  {...register('zipCode')}
                 />
-                {errors.purchasePrice && (
-                  <p className="text-sm text-red-600">{errors.purchasePrice?.message as string}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="zipCode">ZIP Code</Label>
-                <Input id="zipCode" {...register('zipCode')} />
-                {errors.zipCode && (
-                  <p className="text-sm text-red-600">{errors.zipCode?.message as string}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sqFtBuilding">Building Size (sq ft)</Label>
+              <FormField
+                label="Tax Year"
+                htmlFor="taxYear"
+                required
+                error={errors.taxYear?.message as string}
+                helpText="The tax year for which the cost segregation study applies"
+              >
                 <Input
-                  id="sqFtBuilding"
+                  id="taxYear"
                   type="number"
-                  {...register('sqFtBuilding', { valueAsNumber: true })}
+                  placeholder="2024"
+                  {...register('taxYear', { valueAsNumber: true })}
                 />
-                {errors.sqFtBuilding && (
-                  <p className="text-sm text-red-600">{errors.sqFtBuilding?.message as string}</p>
-                )}
-              </div>
+              </FormField>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="acresLand">Land Size (acres)</Label>
-                <Input
-                  id="acresLand"
-                  type="number"
-                  step="0.01"
-                  {...register('acresLand', { valueAsNumber: true })}
-                />
-                {errors.acresLand && (
-                  <p className="text-sm text-red-600">{errors.acresLand?.message as string}</p>
-                )}
-              </div>
+      {/* Financial Information Section */}
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-6">
+          <SectionHeader
+            title="Financial Information"
+            description="Purchase details and pricing"
+          />
 
-              <div className="space-y-2">
-                <Label htmlFor="propertyType">Property Type</Label>
+          <div className="grid gap-5 md:grid-cols-2">
+            <FormField
+              label="Date of Purchase"
+              htmlFor="dateOfPurchase"
+              required
+              error={errors.dateOfPurchase?.message as string}
+              helpText="The date when the property was acquired"
+            >
+              <Input
+                id="dateOfPurchase"
+                type="date"
+                {...register('dateOfPurchase')}
+              />
+            </FormField>
+
+            <FormField
+              label="Purchase Price"
+              htmlFor="purchasePrice"
+              required
+              error={errors.purchasePrice?.message as string}
+              helpText="Total purchase price of the property"
+            >
+              <Controller
+                name="purchasePrice"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    id="purchasePrice"
+                    placeholder="0"
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            </FormField>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Property Details Section */}
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-6">
+          <SectionHeader
+            title="Property Details"
+            description="Physical characteristics and specifications"
+          />
+
+          <div className="space-y-5">
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField
+                label="Building Size"
+                htmlFor="sqFtBuilding"
+                required
+                error={errors.sqFtBuilding?.message as string}
+                helpText="Total square footage of the building(s)"
+              >
+                <div className="relative">
+                  <Input
+                    id="sqFtBuilding"
+                    type="number"
+                    placeholder="10000"
+                    {...register('sqFtBuilding', { valueAsNumber: true })}
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span className="text-gray-500 text-sm">sq ft</span>
+                  </div>
+                </div>
+              </FormField>
+
+              <FormField
+                label="Land Size"
+                htmlFor="acresLand"
+                required
+                error={errors.acresLand?.message as string}
+                helpText="Total acres of land"
+              >
+                <div className="relative">
+                  <Input
+                    id="acresLand"
+                    type="number"
+                    step="0.01"
+                    placeholder="2.5"
+                    {...register('acresLand', { valueAsNumber: true })}
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span className="text-gray-500 text-sm">acres</span>
+                  </div>
+                </div>
+              </FormField>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <FormField
+                label="Property Type"
+                htmlFor="propertyType"
+                required
+                error={errors.propertyType?.message as string}
+              >
                 <Select id="propertyType" {...register('propertyType')}>
                   <option value="">Select type...</option>
                   {PROPERTY_TYPES.map((type) => (
@@ -174,247 +322,214 @@ export function QuoteForm({ initialData, quoteId }: QuoteFormProps) {
                     </option>
                   ))}
                 </Select>
-                {errors.propertyType && (
-                  <p className="text-sm text-red-600">{errors.propertyType?.message as string}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="numberOfFloors">Number of Floors</Label>
+              <FormField
+                label="Number of Floors"
+                htmlFor="numberOfFloors"
+                error={errors.numberOfFloors?.message as string}
+              >
                 <Input
                   id="numberOfFloors"
                   type="number"
+                  placeholder="2"
                   {...register('numberOfFloors', { valueAsNumber: true })}
                 />
-                {errors.numberOfFloors && (
-                  <p className="text-sm text-red-600">{errors.numberOfFloors?.message as string}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="yearBuilt">Year Built</Label>
+              <FormField
+                label="Year Built"
+                htmlFor="yearBuilt"
+                error={errors.yearBuilt?.message as string}
+              >
                 <Input
                   id="yearBuilt"
                   type="number"
+                  placeholder="2020"
                   {...register('yearBuilt', { valueAsNumber: true })}
                 />
-                {errors.yearBuilt && (
-                  <p className="text-sm text-red-600">{errors.yearBuilt?.message as string}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfPurchase">Purchase Date</Label>
-                <Input
-                  id="dateOfPurchase"
-                  type="date"
-                  {...register('dateOfPurchase')}
-                />
-                {errors.dateOfPurchase && (
-                  <p className="text-sm text-red-600">{errors.dateOfPurchase?.message as string}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="taxYear">Tax Year</Label>
-                <Input
-                  id="taxYear"
-                  type="number"
-                  {...register('taxYear', { valueAsNumber: true })}
-                />
-                {errors.taxYear && (
-                  <p className="text-sm text-red-600">{errors.taxYear?.message as string}</p>
-                )}
-              </div>
+              </FormField>
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="flex justify-end">
-              <Button type="button" onClick={() => setStep(2)}>
-                Next
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Additional Information Section */}
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-6">
+          <SectionHeader
+            title="Additional Information"
+            description="Optional details for more accurate quotes"
+          />
 
-      {/* Step 2: Additional Info */}
-      {step === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Additional Information</CardTitle>
-            <CardDescription>Optional details for more accurate quotes</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="capEx">Capital Expenditures ($)</Label>
-                <Input
-                  id="capEx"
-                  type="number"
-                  {...register('capEx', { valueAsNumber: true })}
+          <div className="space-y-5">
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField
+                label="Capital Expenditures (CapEx)"
+                htmlFor="capEx"
+                error={errors.capEx?.message as string}
+                helpText="Additional improvements or renovations made to the property"
+              >
+                <Controller
+                  name="capEx"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="capEx"
+                      placeholder="0"
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
-                {errors.capEx && (
-                  <p className="text-sm text-red-600">{errors.capEx?.message as string}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="multipleProperties">Multiple Properties</Label>
+              <FormField
+                label="Multiple Properties"
+                htmlFor="multipleProperties"
+                error={errors.multipleProperties?.message as string}
+                helpText="Number of properties included in this quote"
+              >
                 <Input
                   id="multipleProperties"
                   type="number"
+                  min="1"
+                  placeholder="1"
                   {...register('multipleProperties', { valueAsNumber: true })}
                 />
-                {errors.multipleProperties && (
-                  <p className="text-sm text-red-600">{errors.multipleProperties?.message as string}</p>
-                )}
-              </div>
+              </FormField>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quoteType">Quote Type</Label>
-                <Select id="quoteType" {...register('quoteType')}>
-                  <option value="RCGV">RCGV</option>
-                  <option value="Pro">Pro</option>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2 pt-8">
-                <input
-                  type="checkbox"
-                  id="rushFee"
-                  {...register('rushFee')}
-                  className="h-4 w-4 rounded"
-                />
-                <Label htmlFor="rushFee" className="font-normal">
-                  Rush order (additional fee applies)
-                </Label>
+            <div className="flex items-start space-x-3">
+              <input
+                type="checkbox"
+                id="rushFee"
+                {...register('rushFee')}
+                className="mt-1 h-5 w-5 rounded border-gray-300 text-rcg-blue focus:ring-rcg-blue cursor-pointer"
+              />
+              <div className="flex-1">
+                <label htmlFor="rushFee" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Rush Order
+                </label>
+                <p className="text-sm text-rcg-text-gray">
+                  Expedited processing with additional fee
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button type="button" onClick={() => setStep(3)}>
-                Next
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: Client Info */}
-      {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Information</CardTitle>
-            <CardDescription>Enter the property owner details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="propertyOwnerName">Property Owner Name</Label>
-              <Input id="propertyOwnerName" {...register('propertyOwnerName')} />
-              {errors.propertyOwnerName && (
-                <p className="text-sm text-red-600">{errors.propertyOwnerName?.message as string}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="propertyAddress">Property Address</Label>
-              <Input id="propertyAddress" {...register('propertyAddress')} />
-              {errors.propertyAddress && (
-                <p className="text-sm text-red-600">{errors.propertyAddress?.message as string}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+            <FormField
+              label="Notes"
+              htmlFor="notes"
+              helpText="Any additional information or special requirements"
+            >
               <textarea
                 id="notes"
                 {...register('notes')}
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                rows={4}
+                placeholder="Enter any additional notes or requirements..."
+                className="flex min-h-[100px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-base placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rcg-blue focus-visible:border-rcg-blue disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
               />
-            </div>
+            </FormField>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setStep(2)}>
-                Back
-              </Button>
-              <Button type="button" onClick={handleCalculate} disabled={calculateQuote.isPending}>
-                {calculateQuote.isPending ? (
-                  <>
-                    <Spinner size="sm" className="mr-2" />
-                    Calculating...
-                  </>
-                ) : (
-                  'Calculate & Review'
-                )}
-              </Button>
+      {/* Quote Results (if calculated) */}
+      {calculatedQuote && (
+        <Card className="shadow-sm border-rcg-blue border-2">
+          <CardContent className="pt-6 pb-6">
+            <SectionHeader
+              title="Quote Calculation"
+              description="Review the calculated quote details"
+            />
+
+            <div className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="bg-rcg-light-blue rounded-lg p-6">
+                  <p className="text-sm font-medium text-rcg-text-gray mb-2">
+                    Final Bid Amount
+                  </p>
+                  <p className="text-4xl font-bold text-rcg-navy font-poppins">
+                    {formatCurrency(calculatedQuote.bidAmount)}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <p className="text-sm font-medium text-rcg-text-gray mb-2">
+                    Building Value
+                  </p>
+                  <p className="text-3xl font-semibold text-gray-900">
+                    {formatCurrency(calculatedQuote.buildingValue)}
+                  </p>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertDescription>
+                  This is a calculated estimate. The quote will be saved as a draft and can be edited before sending to the client.
+                </AlertDescription>
+              </Alert>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 4: Review & Calculate */}
-      {step === 4 && (
-        <>
-          {calculatedQuote ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Quote Calculation</CardTitle>
-                <CardDescription>Review the calculated quote details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Final Bid Amount</Label>
-                    <p className="text-3xl font-bold text-primary">
-                      {formatCurrency(calculatedQuote.bidAmount)}
-                    </p>
-                  </div>
+      {/* Form Actions */}
+      <Card className="shadow-sm bg-gray-50">
+        <CardContent className="pt-6 pb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={() => router.back()}
+              className="border-gray-300 w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
 
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Building Value</Label>
-                    <p className="text-2xl font-semibold">
-                      {formatCurrency(calculatedQuote.buildingValue)}
-                    </p>
-                  </div>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {!calculatedQuote && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={handleCalculate}
+                  disabled={calculateQuote.isPending}
+                  className="border-rcg-blue text-rcg-blue hover:bg-rcg-light-blue w-full sm:w-auto"
+                >
+                  {calculateQuote.isPending ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      Calculating...
+                    </>
+                  ) : (
+                    'Calculate Quote'
+                  )}
+                </Button>
+              )}
 
-                <Alert>
-                  <AlertDescription>
-                    This is a calculated estimate. The quote will be saved as a draft and can be edited before sending to the client.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="flex justify-between">
-                  <Button type="button" variant="outline" onClick={() => setStep(3)}>
-                    Back
-                  </Button>
-                  <Button type="submit" disabled={createQuote.isPending}>
-                    {createQuote.isPending ? (
-                      <>
-                        <Spinner size="sm" className="mr-2" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Quote'
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="py-12">
-                <div className="flex items-center justify-center">
-                  <Spinner size="lg" />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
+              {calculatedQuote && (
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={createQuote.isPending}
+                  className="bg-rcg-blue hover:bg-rcg-navy w-full sm:w-auto"
+                >
+                  {createQuote.isPending ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Quote'
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }

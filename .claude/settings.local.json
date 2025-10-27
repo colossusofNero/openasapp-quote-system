@@ -36,7 +36,10 @@
       "Bash(npx prisma migrate:*)",
       "Bash(npm run prisma:seed:*)",
       "Bash(npx prisma studio:*)",
-      "Bash(npx vercel --version)"
+      "Bash(npx vercel --version)",
+      "Bash(timeout 20 npm run dev:*)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

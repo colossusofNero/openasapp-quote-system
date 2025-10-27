@@ -51,6 +51,23 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // RCG Valuation Brand Colors
+        'rcg-navy': '#1E2949',
+        'rcg-blue': '#4A90E2',
+        'rcg-light-blue': '#E8F3FF',
+        'rcg-success': '#10B981',
+        'rcg-text-gray': '#6B7280',
+        'rcg-bg': '#F9FAFB',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        poppins: ['Poppins', 'system-ui', 'sans-serif'],
+        'tabular-nums': ['Inter', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'display': ['3.5rem', { lineHeight: '1.1', fontWeight: '700' }],
+        'h1': ['2.5rem', { lineHeight: '1.2', fontWeight: '700' }],
+        'h2': ['2rem', { lineHeight: '1.3', fontWeight: '600' }],
       },
       borderRadius: {
         lg: "var(--radius)",
