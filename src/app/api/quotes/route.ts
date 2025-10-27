@@ -151,72 +151,24 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     //   where: { userId: session.user.id, ...(status && { status }) },
     // });
 
-    // Mock data for now
-    const mockQuotes = [
-      {
-        id: crypto.randomUUID(),
-        input: {
-          purchasePrice: 2550000,
-          zipCode: '85260',
-          sqFtBuilding: 1500,
-          acresLand: 0.78,
-          propertyType: 'Multi-Family',
-          numberOfFloors: 2,
-          multipleProperties: 1,
-          dateOfPurchase: '2024-01-15',
-          taxYear: 2025,
-          yearBuilt: 2010,
-          capEx: 50000,
-          propertyOwnerName: 'Acme Properties LLC',
-          propertyAddress: '123 Main St, Scottsdale, AZ 85260',
-          quoteType: 'RCGV' as const,
-          rushFee: false,
-        },
-        output: {
-          bidAmount: 38250,
-          landValue: 78000,
-          buildingValue: 2522000,
-          paymentOptions: {
-            upfront: { amount: 36337.5, discount: 5 },
-            fiftyFifty: {
-              firstPayment: 21037.5,
-              secondPayment: 21037.5,
-              total: 42075,
-            },
-            monthly: { monthlyAmount: 3825, numberOfMonths: 12, total: 45900 },
-          },
-          appliedFactors: {
-            costBasisFactor: 1.3,
-            zipCodeFactor: 1.11,
-            sqFtFactor: 1.0,
-            acresFactor: 0.75,
-            propertyTypeFactor: 0.4,
-            floorsFactor: 1.0,
-          },
-          depreciationSummary: {
-            method: '27.5-year' as const,
-            year1: 504400,
-            year2: 807040,
-            year3: 484224,
-            year4: 290534.4,
-            year5: 290534.4,
-            year6: 145267.2,
-            totalTax: 755280,
-          },
-          quoteType: 'RCGV' as const,
-          calculatedAt: new Date().toISOString(),
-        },
-        status: 'draft' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        userId: 'mock-user-id',
-      },
-    ];
+    // Mock data for now - Empty array to start
+    // In production, this will be fetched from Prisma/database
+    const mockQuotes: any[] = [];
 
     const total = mockQuotes.length;
 
+    // Calculate stats for dashboard
+    const stats = {
+      total: mockQuotes.length,
+      draft: mockQuotes.filter((q) => q.status === 'draft').length,
+      sent: mockQuotes.filter((q) => q.status === 'sent').length,
+      accepted: mockQuotes.filter((q) => q.status === 'accepted').length,
+      rejected: mockQuotes.filter((q) => q.status === 'rejected').length,
+    };
+
     return successResponse({
       quotes: mockQuotes.slice((page - 1) * limit, page * limit),
+      stats,
       pagination: {
         page,
         limit,

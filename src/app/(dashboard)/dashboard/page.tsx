@@ -9,15 +9,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
-import { formatCurrency, formatDateShort } from "@/lib/utils";
+import { formatDateWithTimezone } from "@/lib/utils";
+import { displayTotal, getQuoteDisplayName, getPropertyAddress, getStatusVariant, getStatusLabel } from "@/lib/utils/quote-utils";
+import { SavedQuote } from "@/lib/validations/quote.schema";
 
 export default function DashboardPage() {
-  const { data: quotesResponse, isLoading } = useQuotes({ limit: 5 });
+  const { data: quotesResponse, isLoading, isError, error, refetch } = useQuotes({ limit: 5 });
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <svg
+          className="h-12 w-12 text-destructive"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Unable to load quotes</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {error instanceof Error ? error.message : 'An error occurred while fetching quotes'}
+          </p>
+        </div>
+        <Button onClick={() => refetch()}>
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -36,9 +67,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">Cost Segregation Calculator</h1>
           <p className="text-muted-foreground mt-1">
-            Welcome back! Here's an overview of your quotes.
+            Free tool to calculate cost segregation tax benefits for your properties.
           </p>
         </div>
         <Link href="/quotes/new">
@@ -157,44 +188,52 @@ export default function DashboardPage() {
         <CardContent>
           {quotes.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">No quotes yet</p>
-              <Link href="/quotes/new">
+              <svg
+                className="mx-auto h-12 w-12 text-muted-foreground/50"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <h3 className="mt-4 text-sm font-semibold text-foreground">No quotes yet</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Get started by creating your first cost segregation quote.
+              </p>
+              <Link href="/quotes/new" className="mt-4 inline-block">
                 <Button>Create Your First Quote</Button>
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
-              {quotes.map((quote: any) => (
+              {quotes.map((quote: SavedQuote) => (
                 <div
                   key={quote.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   <div className="space-y-1">
-                    <p className="font-medium">{quote.propertyOwnerName}</p>
+                    <p className="font-medium">{getQuoteDisplayName(quote)}</p>
                     <p className="text-sm text-muted-foreground">
-                      {quote.propertyAddress}
+                      {getPropertyAddress(quote)}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{formatDateShort(quote.createdAt)}</span>
+                      <span>{formatDateWithTimezone(quote.updatedAt ?? quote.createdAt)}</span>
                       <span>•</span>
-                      <span>{quote.quoteType}</span>
+                      <span>{quote.output?.quoteType ?? '—'}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="font-semibold">
-                        {formatCurrency(quote.bidAmount)}
+                        {displayTotal(quote)}
                       </p>
-                      <Badge
-                        variant={
-                          quote.status === "accepted"
-                            ? "success"
-                            : quote.status === "sent"
-                            ? "warning"
-                            : "secondary"
-                        }
-                      >
-                        {quote.status}
+                      <Badge variant={getStatusVariant(quote.status)}>
+                        {getStatusLabel(quote.status)}
                       </Badge>
                     </div>
                     <Link href={`/quotes/${quote.id}`}>
@@ -265,7 +304,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-sm text-muted-foreground">
               {quotes.length > 0 ? (
-                <p>Last quote created {formatDateShort(quotes[0].createdAt)}</p>
+                <p>Last quote created {formatDateWithTimezone(quotes[0].updatedAt ?? quotes[0].createdAt)}</p>
               ) : (
                 <p>No recent activity</p>
               )}
