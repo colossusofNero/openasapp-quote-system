@@ -599,5 +599,6 @@ npm run dev
 **Built with ❤️ by the OpenAsApp Team**
 
 ⭐ Star us on GitHub if you find this project helpful!
+“Deployed via PR preview ✅”.
 
 [View on GitHub](https://github.com/YOUR_USERNAME/openasapp) | [Report Bug](https://github.com/YOUR_USERNAME/openasapp/issues) | [Request Feature](https://github.com/YOUR_USERNAME/openasapp/issues)
