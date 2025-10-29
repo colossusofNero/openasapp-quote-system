@@ -166,6 +166,44 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000)
 
+### Quote parity form (client-only)
+
+The `/quote` route provides a standalone form that mirrors the OpenAsApp "Quote" experience using React Hook Form and Zod. To exercise it locally:
+
+1. Run `npm run dev`.
+2. Open [http://localhost:3000/quote](http://localhost:3000/quote) to enter quote inputs.
+3. Submit the form to navigate to `/quote/preview`, which renders the calculated outputs in a summary card.
+
+#### Field checklist
+
+| Field | Type | Validation highlights |
+| --- | --- | --- |
+| Name of Prospect | Text | 3–120 characters, required |
+| Address of Property | Text | 5–200 characters, required |
+| ZIP Code | Text | Exactly five numeric digits |
+| Tax Year | Number | Integer between 2000 and 2100 |
+| Tax Deadline | Select | One of the 12 calendar months |
+| Purchase Price | Currency | Required, $50,000–$50,000,000 |
+| Capital Improvements | Toggle + Currency | When “Yes”, amount required ($0–$10,000,000) |
+| Land Value | Percentage | 0–80%, two decimal precision |
+| 1031 Exchange | Toggle + Currency | When “Yes”, accumulated depreciation required ($0–$10,000,000) |
+| SqFt Building | Number | 100–1,000,000 sqft |
+| Acres Land | Decimal | 0.01–100 acres |
+| Property Type | Select | Must match OpenAsApp property list |
+| Number of Floors | Number | 1–40 |
+| Multiple Properties | Number | 1–50 |
+| Need a Rush? | Select | `no_rush` or `rush` (adds $1,500) |
+| Year Built | Number | 1900–current year |
+| Price Override | Toggle + Currency | When “Yes”, override amount $1,000–$1,000,000 |
+
+#### Calculations shown on `/quote/preview`
+
+- Base cost segregation bid, natural log quote, multiple properties quote, and cost method floor
+- Final bid selection with manual override + optional rush fee
+- 50/50 (base bid) and monthly (20% premium) payment options with installment totals
+- Bonus depreciation snapshot (land, building, and first-year bonus)
+- Factor breakdown (cost basis, ZIP, square footage, acreage, property type, floors, multiple properties)
+
 ### Default Credentials
 
 ```
