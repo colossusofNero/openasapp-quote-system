@@ -35,18 +35,16 @@ export function Field({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
-        <label htmlFor={fieldId} className="text-slate-600">
-          {label}
-        </label>
+      <label htmlFor={fieldId} className="block text-sm font-semibold text-slate-900">
+        {label}
         {required ? (
-          <span className="text-rose-500" aria-hidden>
+          <span className="ml-1 text-base font-normal text-rose-500" aria-hidden>
             *
           </span>
         ) : (
-          <span className="text-[11px] font-medium text-slate-400">Optional</span>
+          <span className="ml-2 text-sm font-medium text-slate-400">(Optional)</span>
         )}
-      </div>
+      </label>
       {children({ id: fieldId, describedBy, invalid })}
       {helpText && (
         <p id={helpId} className="text-xs text-slate-500">
