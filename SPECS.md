@@ -45,6 +45,10 @@
 - Price Override toggles require a valid override amount; when “No” the value is cleared to avoid stale overrides.
 - Currency inputs are stored as numbers, surfaced with two-decimal formatting in the UI and summary view.
 
+## Submission Hand-off
+- `/quote/preview` shows a “Email this quote to RCG” call-to-action that opens a `mailto:quotes@rcgv.com` draft populated with key inputs (prospect, property, tax info, rush flag) and the calculated final bid.
+- Clicking “Start a new quote” clears the session-stored payload so quotes aren’t retained in the browser—long-term storage happens in backend systems.
+
 ## Calculation Model
 All pricing calculations live in `lib/quoteMath.ts` as pure functions and are reused by UI and tests. Constants originate from `Base Pricing27.1_Pro_SMART_RCGV.xlsx` and the internal docs.
 
