@@ -1,18 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  Controller,
-  useForm,
-  useWatch,
-} from "react-hook-form";
-import type {
-  Control,
-  FieldErrors,
-  UseFormRegister,
-} from "react-hook-form";
+import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 
 import { Field } from "@/components/Field";
 import {
@@ -24,1108 +15,869 @@ import {
   TAX_DEADLINES,
   calculateQuote,
 } from "@/lib/quoteMath";
-import {
-  QuoteSchema,
-  defaultQuoteValues,
-  quoteSchema,
-} from "@/lib/quoteSchema";
+import { QuoteSchema, defaultQuoteValues, quoteSchema } from "@/lib/quoteSchema";
 import { formatMoney, formatNumber } from "@/lib/utils";
 
-type FieldId = keyof QuoteSchema;
-
-interface StepConfig {
-  id: string;
-  title: string;
-  description: string;
-  gridClass: string;
-  fields: FieldId[];
-}
+import { QuoteDocument } from "./QuoteDocument";
 
 const RUSH_OPTION_LABELS: Record<RushOption, string> = {
-  no_rush: "No rush (standard turnaround)",
+  no_rush: "Standard turnaround",
   rush: "Rush delivery (+$1,500)",
 };
 
-const TAX_DEADLINE_OPTIONS = TAX_DEADLINES;
-
-const DESKTOP_STEPS: StepConfig[] = [
-  {
-    id: "contact",
-    title: "Prospect & property basics",
-    description: "Tell us who this quote is for and where the property lives.",
-    gridClass: "grid gap-6 md:grid-cols-2",
-    fields: ["prospectName", "propertyAddress", "zipCode", "taxYear", "taxDeadline"],
-  },
-  {
-    id: "financial",
-    title: "Financial snapshot",
-    description: "Capture purchase price, improvements, and overrides.",
-    gridClass: "grid gap-6 md:grid-cols-2",
-    fields: [
-      "purchasePrice",
-      "landValuePercent",
-      "hasCapitalImprovements",
-      "capitalImprovementsAmount",
-      "priceOverride",
-      "overrideAmount",
-    ],
-  },
-  {
-    id: "property",
-    title: "Property profile",
-    description: "Dimensions, type, and property count drive the bid range.",
-    gridClass: "grid gap-6 md:grid-cols-2 xl:grid-cols-3",
-    fields: [
-      "propertyType",
-      "yearBuilt",
-      "numberOfFloors",
-      "sqftBuilding",
-      "acresLand",
-      "multipleProperties",
-    ],
-  },
-  {
-    id: "context",
-    title: "Additional context",
-    description: "Let us know about 1031 exchanges and delivery speed.",
-    gridClass: "grid gap-6 md:grid-cols-2",
-    fields: ["is1031Exchange", "accumulated1031Depreciation", "needRush"],
-  },
-];
-
-interface FieldMeta {
-  label: string;
-  placeholder?: string;
-  helpText?: string;
-  hint?: string;
-}
-
-const FIELD_META: Record<FieldId, FieldMeta> = {
-  prospectName: {
-    label: "Prospect name",
-    placeholder: "Valued Client",
-  },
-  propertyAddress: {
-    label: "Property address",
-    placeholder: "123 Main St, Yourtown, ST 12345",
-  },
-  zipCode: {
-    label: "ZIP code",
-    hint: "Use the five-digit ZIP where the property sits",
-  },
-  taxYear: {
-    label: "Tax year",
-    hint: "Calendar year for this quote",
-  },
-  taxDeadline: {
-    label: "Tax deadline",
-  },
-  purchasePrice: {
-    label: "Purchase price",
-    hint: "Total acquisition price including land",
-  },
+const FIELD_META: Record<keyof QuoteSchema, { label: string; hint?: string; helpText?: string }> = {
+  prospectName: { label: "Prospect name", hint: "Who will receive this quote?" },
+  propertyAddress: { label: "Property address", hint: "Street, city, state" },
+  zipCode: { label: "ZIP code", hint: "5-digit ZIP for the property" },
+  taxYear: { label: "Tax year" },
+  taxDeadline: { label: "Tax deadline" },
+  purchasePrice: { label: "Purchase price", hint: "Total acquisition cost" },
   hasCapitalImprovements: {
     label: "Capital improvements completed?",
     helpText: "Select Yes if improvements are already in service.",
   },
-  capitalImprovementsAmount: {
-    label: "Capital improvements amount",
-    hint: "Completed improvements only",
-  },
-  landValuePercent: {
-    label: "Land value %",
-    hint: "Portion of purchase allocated to land",
-  },
+  capitalImprovementsAmount: { label: "Capital improvements amount" },
+  landValuePercent: { label: "Land value %" },
   is1031Exchange: {
     label: "1031 exchange?",
-    helpText: "Select Yes if prior depreciation carries forward.",
+    helpText: "Choose Yes if prior depreciation carries over.",
   },
-  accumulated1031Depreciation: {
-    label: "Accumulated 1031 depreciation",
-  },
-  sqftBuilding: {
-    label: "SqFt building",
-  },
-  acresLand: {
-    label: "Acres land",
-  },
-  propertyType: {
-    label: "Property type",
-  },
-  numberOfFloors: {
-    label: "Number of floors",
-  },
-  multipleProperties: {
-    label: "# of properties",
-    hint: "How many locations share this scope?",
-  },
-  needRush: {
-    label: "Delivery speed",
-  },
-  yearBuilt: {
-    label: "Year built",
-  },
+  accumulated1031Depreciation: { label: "Accumulated 1031 depreciation" },
+  sqftBuilding: { label: "Building square footage" },
+  acresLand: { label: "Land acreage" },
+  propertyType: { label: "Property type" },
+  numberOfFloors: { label: "Number of floors" },
+  multipleProperties: { label: "# of properties", hint: "Locations included in this scope" },
+  needRush: { label: "Delivery speed" },
+  yearBuilt: { label: "Year built" },
   priceOverride: {
     label: "Price override?",
     helpText: "Overrides replace the calculated final bid.",
   },
-  overrideAmount: {
-    label: "Override amount",
-  },
+  overrideAmount: { label: "Override amount" },
 };
 
-interface QuestionDefinition {
-  stepId: string;
-  fieldId: FieldId;
-}
-
-const baseInputClassName =
+const baseInputClass =
   "w-full rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40";
-const selectClassName = `${baseInputClassName} pr-10`;
-const currencyInputClassName = `${baseInputClassName} pl-10`;
+
+const currencyInputClass = `${baseInputClass} pl-10`;
+const percentageInputClass = `${baseInputClass} pl-10`;
+const selectInputClass = `${baseInputClass} pr-10`;
 
 export function QuoteForm() {
-  const router = useRouter();
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [desktopStepIndex, setDesktopStepIndex] = useState(0);
-  const [mobileQuestionIndex, setMobileQuestionIndex] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
+  const pdfRef = useRef<HTMLDivElement | null>(null);
+  const [lastValidValues, setLastValidValues] = useState<QuoteFormValues>(defaultQuoteValues);
+  const [lastValidResults, setLastValidResults] = useState<QuoteComputation>(
+    calculateQuote(defaultQuoteValues),
+  );
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   const {
     control,
     register,
     handleSubmit,
     reset,
-    trigger,
-    setValue,
-    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<QuoteSchema>({
     resolver: zodResolver(quoteSchema),
-    mode: "onChange",
-    reValidateMode: "onChange",
     defaultValues: defaultQuoteValues,
+    mode: "onBlur",
   });
 
-  const watchedValues = useWatch({ control }) as QuoteSchema;
-  const summaryValues: QuoteFormValues = watchedValues ?? defaultQuoteValues;
-  const hasCapitalImprovements = summaryValues.hasCapitalImprovements;
-  const is1031Exchange = summaryValues.is1031Exchange;
-  const priceOverride = summaryValues.priceOverride;
+  const watchedValues = useWatch({ control });
+  const rawValues = (watchedValues ?? defaultQuoteValues) as QuoteSchema;
 
-  const computedResults = useMemo(
-    () => calculateQuote(summaryValues),
-    [summaryValues],
-  );
+  useEffect(() => {
+    const parse = quoteSchema.safeParse(watchedValues);
+    if (!parse.success) {
+      return;
+    }
+
+    setLastValidValues(parse.data);
+    setLastValidResults(calculateQuote(parse.data));
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("quoteFormDraft", JSON.stringify(parse.data));
+    }
+  }, [watchedValues]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const mediaQuery = window.matchMedia("(min-width: 1024px)");
-    const updateMatches = () => setIsDesktop(mediaQuery.matches);
-    updateMatches();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", updateMatches);
-      return () => mediaQuery.removeEventListener("change", updateMatches);
-    }
-
-    mediaQuery.addListener(updateMatches);
-    return () => mediaQuery.removeListener(updateMatches);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const storedSession = window.sessionStorage.getItem("quoteFormData");
     const storedDraft = window.localStorage.getItem("quoteFormDraft");
-    const candidate = storedSession ?? storedDraft;
-
-    if (!candidate) {
-      void trigger();
+    if (!storedDraft) {
       return;
     }
 
     try {
-      const parsed = JSON.parse(candidate) as QuoteSchema;
-      reset(parsed, { keepDirty: false, keepValues: false });
+      const parsed = JSON.parse(storedDraft) as QuoteSchema;
+      reset(parsed, { keepDefaultValues: false });
     } catch (error) {
-      console.error("Failed to parse stored quote data", error);
-      window.sessionStorage.removeItem("quoteFormData");
+      console.error("Unable to restore saved quote", error);
       window.localStorage.removeItem("quoteFormDraft");
-    } finally {
-      void trigger();
     }
-  }, [reset, trigger]);
-
-  useEffect(() => {
-    if (!hasCapitalImprovements) {
-      setValue("capitalImprovementsAmount", 0, { shouldValidate: true, shouldDirty: false });
-      clearErrors("capitalImprovementsAmount");
-    }
-  }, [hasCapitalImprovements, setValue, clearErrors]);
-
-  useEffect(() => {
-    if (!is1031Exchange) {
-      setValue("accumulated1031Depreciation", 0, { shouldValidate: true, shouldDirty: false });
-      clearErrors("accumulated1031Depreciation");
-    }
-  }, [is1031Exchange, setValue, clearErrors]);
-
-  useEffect(() => {
-    if (!priceOverride) {
-      setValue("overrideAmount", undefined, { shouldValidate: true, shouldDirty: false });
-      clearErrors("overrideAmount");
-    }
-  }, [priceOverride, setValue, clearErrors]);
-
-  useEffect(() => {
-    if (saveStatus !== "saved") {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setSaveStatus("idle"), 1800);
-    return () => window.clearTimeout(timeout);
-  }, [saveStatus]);
-
-  const visibleSteps = useMemo(
-    () =>
-      DESKTOP_STEPS.map((step) => ({
-        ...step,
-        fields: step.fields.filter((fieldId) => {
-          if (fieldId === "capitalImprovementsAmount") {
-            return hasCapitalImprovements;
-          }
-          if (fieldId === "accumulated1031Depreciation") {
-            return is1031Exchange;
-          }
-          if (fieldId === "overrideAmount") {
-            return priceOverride;
-          }
-          return true;
-        }),
-      })),
-    [hasCapitalImprovements, is1031Exchange, priceOverride],
-  );
-
-  const visibleQuestions = useMemo(() => {
-    const questions: QuestionDefinition[] = [];
-    for (const step of visibleSteps) {
-      for (const fieldId of step.fields) {
-        questions.push({ stepId: step.id, fieldId });
-      }
-    }
-    return questions;
-  }, [visibleSteps]);
-
-  useEffect(() => {
-    if (!isDesktop) {
-      setMobileQuestionIndex((index) =>
-        Math.min(index, Math.max(visibleQuestions.length - 1, 0)),
-      );
-      return;
-    }
-
-    const currentQuestion = visibleQuestions[mobileQuestionIndex];
-    if (!currentQuestion) {
-      return;
-    }
-
-    const stepIndex = visibleSteps.findIndex((step) => step.id === currentQuestion.stepId);
-    if (stepIndex >= 0 && stepIndex !== desktopStepIndex) {
-      setDesktopStepIndex(stepIndex);
-    }
-  }, [isDesktop, visibleQuestions, visibleSteps, mobileQuestionIndex, desktopStepIndex]);
-
-  useEffect(() => {
-    if (isDesktop) {
-      return;
-    }
-    const step = visibleSteps[desktopStepIndex];
-    if (!step) {
-      return;
-    }
-    const firstQuestionIndex = visibleQuestions.findIndex((question) => question.stepId === step.id);
-    if (firstQuestionIndex >= 0 && firstQuestionIndex !== mobileQuestionIndex) {
-      setMobileQuestionIndex(firstQuestionIndex);
-    }
-  }, [isDesktop, visibleSteps, visibleQuestions, desktopStepIndex, mobileQuestionIndex]);
-
-  const currentFields: FieldId[] = useMemo(() => {
-    if (isDesktop) {
-      return visibleSteps[desktopStepIndex]?.fields ?? [];
-    }
-    const currentQuestion = visibleQuestions[mobileQuestionIndex];
-    return currentQuestion ? [currentQuestion.fieldId] : [];
-  }, [isDesktop, visibleSteps, desktopStepIndex, visibleQuestions, mobileQuestionIndex]);
-
-  const hasFieldError = (fieldId: FieldId) => Boolean(errors[fieldId as keyof typeof errors]);
-  const isCurrentValid = currentFields.every((fieldId) => !hasFieldError(fieldId));
-
-  const totalUnits = isDesktop ? visibleSteps.length : visibleQuestions.length;
-  const activeIndex = isDesktop ? desktopStepIndex : mobileQuestionIndex;
-  const progress = totalUnits <= 1 ? 100 : Math.round((activeIndex / (totalUnits - 1)) * 100);
-
-  const currentStep = visibleSteps[desktopStepIndex];
-  const currentQuestion = visibleQuestions[mobileQuestionIndex];
-  const nextLabel = activeIndex === totalUnits - 1 ? "Review quote" : "Next";
-
-  const onSubmit = (data: QuoteSchema) => {
-    if (typeof window !== "undefined") {
-      const payload = JSON.stringify(data);
-      window.sessionStorage.setItem("quoteFormData", payload);
-      window.localStorage.setItem("quoteFormDraft", payload);
-    }
-    router.push("/quote/preview");
-  };
-
-  const handleNext = async () => {
-    if (currentFields.length === 0) {
-      return;
-    }
-
-    const valid = await trigger(currentFields as FieldId[], {
-      shouldFocus: true,
-    });
-
-    if (!valid) {
-      return;
-    }
-
-    if (isDesktop) {
-      if (desktopStepIndex >= visibleSteps.length - 1) {
-        void handleSubmit(onSubmit)();
-        return;
-      }
-      setDesktopStepIndex((index) => Math.min(index + 1, visibleSteps.length - 1));
-    } else {
-      if (mobileQuestionIndex >= visibleQuestions.length - 1) {
-        void handleSubmit(onSubmit)();
-        return;
-      }
-      setMobileQuestionIndex((index) => Math.min(index + 1, visibleQuestions.length - 1));
-    }
-  };
-
-  const handleBack = () => {
-    if (isDesktop) {
-      setDesktopStepIndex((index) => Math.max(index - 1, 0));
-    } else {
-      setMobileQuestionIndex((index) => Math.max(index - 1, 0));
-    }
-  };
+  }, [reset]);
 
   const handleSaveDraft = () => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const payload = JSON.stringify(summaryValues);
-    window.localStorage.setItem("quoteFormDraft", payload);
-    window.sessionStorage.setItem("quoteFormData", payload);
-    setSaveStatus("saved");
+    setIsSavingDraft(true);
+    window.localStorage.setItem("quoteFormDraft", JSON.stringify(lastValidValues));
+    window.setTimeout(() => setIsSavingDraft(false), 1500);
   };
 
-  const handleReset = () => {
-    reset(defaultQuoteValues, { keepDirty: false, keepValues: false });
-    setDesktopStepIndex(0);
-    setMobileQuestionIndex(0);
+  const onSubmit = async (data: QuoteSchema) => {
     if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem("quoteFormData");
-      window.localStorage.removeItem("quoteFormDraft");
+      window.localStorage.setItem("quoteFormDraft", JSON.stringify(data));
     }
-    void trigger();
+
+    const results = calculateQuote(data);
+    setLastValidValues(data);
+    setLastValidResults(results);
+
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+
+    if (!pdfRef.current) {
+      return;
+    }
+
+    try {
+      const html2pdf = await loadHtml2Pdf();
+      if (!html2pdf) {
+        throw new Error("html2pdf.js is not available");
+      }
+
+      const filename = `Quote_${(data.prospectName || "Client").replace(/\s+/g, "_")}.pdf`;
+
+      await html2pdf()
+        .set({
+          margin: 12,
+          filename,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
+        })
+        .from(pdfRef.current)
+        .save();
+    } catch (error) {
+      console.error("Failed to export quote PDF", error);
+    }
   };
+
+  const hasCapitalImprovements = Boolean(rawValues?.hasCapitalImprovements);
+  const is1031Exchange = Boolean(rawValues?.is1031Exchange);
+  const priceOverride = Boolean(rawValues?.priceOverride);
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="relative flex flex-col gap-10 pb-28 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12 lg:pb-0"
-    >
-      <div className="space-y-8">
-        <header className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900/60 p-8 text-slate-100 shadow-2xl">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-4">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-200/90">
-                Configurator wizard
-              </span>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Run a modern cost seg quote</h1>
-                <p className="max-w-2xl text-sm text-slate-200/80">
-                  Guided steps on the left, live pricing on the right. On mobile we’ll walk you through one smart question at a time with totals updating below.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right shadow-lg">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-200/80">Live total</p>
-              <p className="mt-2 text-3xl font-semibold text-white">{formatMoney(computedResults.finalBid)}</p>
-            </div>
+    <div className="space-y-10 text-slate-100">
+      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 px-8 py-10 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.75)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300/80">
+              RCG Quote Configurator
+            </p>
+            <h1 className="text-3xl font-semibold text-white sm:text-4xl">Build a complete cost seg quote</h1>
+            <p className="max-w-2xl text-sm text-slate-400">
+              Capture the project snapshot, review totals instantly, and export a branded PDF handoff — all on one screen.
+            </p>
           </div>
-        </header>
-
-        <section className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-2xl backdrop-blur">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                <span>
-                  Step {activeIndex + 1} of {totalUnits}
-                </span>
-                <span>
-                  {isDesktop
-                    ? currentStep?.title ?? ""
-                    : currentQuestion
-                      ? FIELD_META[currentQuestion.fieldId].label
-                      : ""}
-                </span>
-              </div>
-              <div className="h-1 w-full rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-emerald-400 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            {isDesktop && currentStep ? (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold text-white">{currentStep.title}</h2>
-                  <p className="text-sm text-slate-400">{currentStep.description}</p>
-                </div>
-                <div className={currentStep.gridClass}>
-                  {currentStep.fields.map((fieldId) => (
-                    <FieldRenderer
-                      key={fieldId}
-                      fieldId={fieldId}
-                      register={register}
-                      control={control}
-                      errors={errors}
-                      required={determineRequired(fieldId, summaryValues)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {!isDesktop && currentQuestion ? (
-              <div className="space-y-6 rounded-2xl border border-white/10 bg-black/40 p-6">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold text-white">
-                    {FIELD_META[currentQuestion.fieldId].label}
-                  </h2>
-                  {FIELD_META[currentQuestion.fieldId].hint && (
-                    <p className="text-sm text-slate-400">
-                      {FIELD_META[currentQuestion.fieldId].hint}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  <FieldRenderer
-                    fieldId={currentQuestion.fieldId}
-                    register={register}
-                    control={control}
-                    errors={errors}
-                    required={determineRequired(currentQuestion.fieldId, summaryValues)}
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="rounded-full border border-white/10 px-4 py-2 font-semibold text-slate-300 transition hover:border-emerald-300/60 hover:text-white"
-                >
-                  Start over
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveDraft}
-                  className="rounded-full border border-white/10 px-4 py-2 font-semibold text-slate-300 transition hover:border-emerald-300/60 hover:text-white"
-                >
-                  {saveStatus === "saved" ? "Saved ✓" : "Save & resume"}
-                </button>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  disabled={activeIndex === 0}
-                  className="rounded-full border border-white/10 px-5 py-2 text-sm font-semibold text-slate-200 transition disabled:cursor-not-allowed disabled:border-slate-800 disabled:text-slate-600 hover:border-emerald-300/60 hover:text-white"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={!isCurrentValid || isSubmitting}
-                  className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-emerald-950 shadow-lg transition disabled:cursor-not-allowed disabled:bg-emerald-800/50 hover:bg-emerald-400"
-                >
-                  {nextLabel}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <LiveSummary values={summaryValues} results={computedResults} />
-
-      <div className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t border-white/10 bg-slate-950/95 px-5 py-4 text-slate-100 shadow-[0_-10px_40px_rgba(15,23,42,0.6)] backdrop-blur lg:hidden">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">Est. total</p>
-          <p className="text-xl font-semibold">{formatMoney(computedResults.finalBid)}</p>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            className="inline-flex items-center gap-2 rounded-full border border-slate-700/80 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-emerald-400 hover:text-emerald-200"
+          >
+            {isSavingDraft ? "Draft saved" : "Save draft"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!isCurrentValid || isSubmitting}
-          className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-emerald-950 shadow-lg transition disabled:cursor-not-allowed disabled:bg-emerald-800/50 hover:bg-emerald-400"
+      </header>
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <form
+          className="space-y-10 rounded-3xl border border-slate-800 bg-slate-900/60 p-8 shadow-[0_40px_80px_-60px_rgba(0,0,0,0.9)]"
+          onSubmit={handleSubmit(onSubmit)}
         >
-          {nextLabel}
-        </button>
+          <Section title="Client & property" description="Core identifiers and location details for the engagement.">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <FieldWrapper
+                fieldId="prospectName"
+                meta={FIELD_META.prospectName}
+                error={errors.prospectName?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="text"
+                    autoComplete="name"
+                    className={baseInputClass}
+                    placeholder="Valued Client"
+                    {...register("prospectName")}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="propertyAddress"
+                meta={FIELD_META.propertyAddress}
+                error={errors.propertyAddress?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="text"
+                    autoComplete="street-address"
+                    className={baseInputClass}
+                    placeholder="123 Main St, Anytown, ST 12345"
+                    {...register("propertyAddress")}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper fieldId="zipCode" meta={FIELD_META.zipCode} error={errors.zipCode?.message} required>
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    inputMode="numeric"
+                    maxLength={5}
+                    className={baseInputClass}
+                    placeholder="12345"
+                    {...register("zipCode")}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper fieldId="taxYear" meta={FIELD_META.taxYear} error={errors.taxYear?.message} required>
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="number"
+                    className={baseInputClass}
+                    {...register("taxYear", { valueAsNumber: true })}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="taxDeadline"
+                meta={FIELD_META.taxDeadline}
+                error={errors.taxDeadline?.message}
+                required
+                className="sm:col-span-2"
+              >
+                {({ id, describedBy, invalid }) => (
+                  <select
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    className={selectInputClass}
+                    {...register("taxDeadline")}
+                  >
+                    <option value="" disabled>
+                      Select deadline
+                    </option>
+                    {TAX_DEADLINES.map((deadline) => (
+                      <option key={deadline} value={deadline}>
+                        {deadline}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="propertyType"
+                meta={FIELD_META.propertyType}
+                error={errors.propertyType?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <select
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    className={selectInputClass}
+                    {...register("propertyType")}
+                  >
+                    <option value="" disabled>
+                      Select property type
+                    </option>
+                    {PROPERTY_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="yearBuilt"
+                meta={FIELD_META.yearBuilt}
+                error={errors.yearBuilt?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="number"
+                    className={baseInputClass}
+                    {...register("yearBuilt", { valueAsNumber: true })}
+                  />
+                )}
+              </FieldWrapper>
+            </div>
+          </Section>
+
+          <Section title="Financial snapshot" description="Purchase allocations, improvements, and overrides.">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <FieldWrapper
+                fieldId="purchasePrice"
+                meta={FIELD_META.purchasePrice}
+                error={errors.purchasePrice?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-slate-400">$
+                    </span>
+                    <input
+                      id={id}
+                      aria-describedby={describedBy}
+                      aria-invalid={invalid}
+                      type="number"
+                      min={0}
+                      className={currencyInputClass}
+                      {...register("purchasePrice", { valueAsNumber: true })}
+                    />
+                  </div>
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="landValuePercent"
+                meta={FIELD_META.landValuePercent}
+                error={errors.landValuePercent?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-slate-400">
+                      %
+                    </span>
+                    <input
+                      id={id}
+                      aria-describedby={describedBy}
+                      aria-invalid={invalid}
+                      type="number"
+                      step="0.01"
+                      className={percentageInputClass}
+                      {...register("landValuePercent", { valueAsNumber: true })}
+                    />
+                  </div>
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="hasCapitalImprovements"
+                meta={FIELD_META.hasCapitalImprovements}
+                error={errors.hasCapitalImprovements?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <Controller
+                    control={control}
+                    name="hasCapitalImprovements"
+                    render={({ field }) => (
+                      <ToggleChips
+                        id={id}
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={[
+                          { value: true, label: "Yes" },
+                          { value: false, label: "No" },
+                        ]}
+                        describedBy={describedBy}
+                        invalid={invalid}
+                      />
+                    )}
+                  />
+                )}
+              </FieldWrapper>
+
+              {hasCapitalImprovements && (
+                <FieldWrapper
+                  fieldId="capitalImprovementsAmount"
+                  meta={FIELD_META.capitalImprovementsAmount}
+                  error={errors.capitalImprovementsAmount?.message}
+                  required
+                >
+                  {({ id, describedBy, invalid }) => (
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-slate-400">
+                        $
+                      </span>
+                      <input
+                        id={id}
+                        aria-describedby={describedBy}
+                        aria-invalid={invalid}
+                        type="number"
+                        min={0}
+                        className={currencyInputClass}
+                        {...register("capitalImprovementsAmount", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                </FieldWrapper>
+              )}
+
+              <FieldWrapper
+                fieldId="priceOverride"
+                meta={FIELD_META.priceOverride}
+                error={errors.priceOverride?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <Controller
+                    control={control}
+                    name="priceOverride"
+                    render={({ field }) => (
+                      <ToggleChips
+                        id={id}
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={[
+                          { value: true, label: "Yes" },
+                          { value: false, label: "No" },
+                        ]}
+                        describedBy={describedBy}
+                        invalid={invalid}
+                      />
+                    )}
+                  />
+                )}
+              </FieldWrapper>
+
+              {priceOverride && (
+                <FieldWrapper
+                  fieldId="overrideAmount"
+                  meta={FIELD_META.overrideAmount}
+                  error={errors.overrideAmount?.message}
+                  required
+                >
+                  {({ id, describedBy, invalid }) => (
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-slate-400">
+                        $
+                      </span>
+                      <input
+                        id={id}
+                        aria-describedby={describedBy}
+                        aria-invalid={invalid}
+                        type="number"
+                        min={0}
+                        className={currencyInputClass}
+                        {...register("overrideAmount", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                </FieldWrapper>
+              )}
+            </div>
+          </Section>
+
+          <Section title="Property metrics" description="Size, floors, and multi-property scope.">
+            <div className="grid gap-6 sm:grid-cols-3">
+              <FieldWrapper
+                fieldId="sqftBuilding"
+                meta={FIELD_META.sqftBuilding}
+                error={errors.sqftBuilding?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="number"
+                    className={baseInputClass}
+                    {...register("sqftBuilding", { valueAsNumber: true })}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper fieldId="acresLand" meta={FIELD_META.acresLand} error={errors.acresLand?.message} required>
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="number"
+                    step="0.01"
+                    className={baseInputClass}
+                    {...register("acresLand", { valueAsNumber: true })}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="numberOfFloors"
+                meta={FIELD_META.numberOfFloors}
+                error={errors.numberOfFloors?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="number"
+                    className={baseInputClass}
+                    {...register("numberOfFloors", { valueAsNumber: true })}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="multipleProperties"
+                meta={FIELD_META.multipleProperties}
+                error={errors.multipleProperties?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <input
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    type="number"
+                    className={baseInputClass}
+                    {...register("multipleProperties", { valueAsNumber: true })}
+                  />
+                )}
+              </FieldWrapper>
+            </div>
+          </Section>
+
+          <Section title="Context & delivery" description="Timing preferences and 1031 considerations.">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <FieldWrapper
+                fieldId="needRush"
+                meta={FIELD_META.needRush}
+                error={errors.needRush?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <Controller
+                    control={control}
+                    name="needRush"
+                    render={({ field }) => (
+                      <ToggleChips
+                        id={id}
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={RUSH_OPTIONS.map((option) => ({
+                          value: option,
+                          label: RUSH_OPTION_LABELS[option as RushOption],
+                        }))}
+                        describedBy={describedBy}
+                        invalid={invalid}
+                      />
+                    )}
+                  />
+                )}
+              </FieldWrapper>
+
+              <FieldWrapper
+                fieldId="is1031Exchange"
+                meta={FIELD_META.is1031Exchange}
+                error={errors.is1031Exchange?.message}
+                required
+              >
+                {({ id, describedBy, invalid }) => (
+                  <Controller
+                    control={control}
+                    name="is1031Exchange"
+                    render={({ field }) => (
+                      <ToggleChips
+                        id={id}
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={[
+                          { value: true, label: "Yes" },
+                          { value: false, label: "No" },
+                        ]}
+                        describedBy={describedBy}
+                        invalid={invalid}
+                      />
+                    )}
+                  />
+                )}
+              </FieldWrapper>
+
+              {is1031Exchange && (
+                <FieldWrapper
+                  fieldId="accumulated1031Depreciation"
+                  meta={FIELD_META.accumulated1031Depreciation}
+                  error={errors.accumulated1031Depreciation?.message}
+                  required
+                  className="sm:col-span-2"
+                >
+                  {({ id, describedBy, invalid }) => (
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-slate-400">
+                        $
+                      </span>
+                      <input
+                        id={id}
+                        aria-describedby={describedBy}
+                        aria-invalid={invalid}
+                        type="number"
+                        min={0}
+                        className={currencyInputClass}
+                        {...register("accumulated1031Depreciation", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                </FieldWrapper>
+              )}
+            </div>
+          </Section>
+
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-400">
+              Exporting your quote captures the latest values, including overrides and rush fees.
+            </p>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-400/25 transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/80 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? "Preparing PDF…" : "Get quote (PDF)"}
+            </button>
+          </div>
+        </form>
+
+        <aside className="space-y-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-[0_30px_60px_-45px_rgba(0,0,0,0.9)]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300/80">Live summary</p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">Your quote</h2>
+            <p className="mt-1 text-sm text-slate-400">Updates instantly as you adjust inputs.</p>
+          </div>
+
+          <SummaryRow label="Final bid" value={lastValidResults.finalBid} emphasis />
+          {lastValidValues.priceOverride && lastValidValues.overrideAmount ? (
+            <SummaryRow label="Override applied" value={lastValidValues.overrideAmount} subtle />
+          ) : (
+            <SummaryRow label="Base cost seg bid" value={lastValidResults.baseCostSegBid} />
+          )}
+          <SummaryRow label="Multiple properties quote" value={lastValidResults.multiplePropertiesQuote} />
+          <SummaryRow label="Cost method floor" value={lastValidResults.costMethodQuote} />
+          {lastValidResults.rushFee > 0 && <SummaryRow label="Rush fee" value={lastValidResults.rushFee} subtle />}
+
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+
+          <div className="space-y-3 text-sm text-slate-300">
+            <InfoLine label="Property" value={lastValidValues.propertyAddress || "—"} />
+            <InfoLine label="Type" value={lastValidValues.propertyType} />
+            <InfoLine label="Floors" value={String(lastValidValues.numberOfFloors)} />
+            <InfoLine label="SqFt" value={`${formatNumber(lastValidValues.sqftBuilding)} sqft`} />
+            <InfoLine label="Acreage" value={`${lastValidValues.acresLand.toFixed(2)} acres`} />
+            <InfoLine label="Land allocation" value={`${lastValidValues.landValuePercent.toFixed(2)}%`} />
+            <InfoLine label="Properties" value={String(lastValidValues.multipleProperties)} />
+            <InfoLine label="Rush" value={lastValidValues.needRush === "rush" ? "Yes" : "No"} />
+          </div>
+        </aside>
       </div>
-    </form>
+
+      <div ref={pdfRef} className="pointer-events-none absolute -left-[9999px] top-0">
+        <QuoteDocument values={lastValidValues} results={lastValidResults} />
+      </div>
+    </div>
   );
 }
 
-type RendererProps = {
-  fieldId: FieldId;
-  register: UseFormRegister<QuoteSchema>;
-  control: Control<QuoteSchema>;
-  errors: FieldErrors<QuoteSchema>;
-  required: boolean;
-};
-
-function FieldRenderer({ fieldId, register, control, errors, required }: RendererProps) {
-  const meta = FIELD_META[fieldId];
-  const fieldError = errors[fieldId as keyof typeof errors];
-  const errorMessage =
-    typeof fieldError?.message === "string" ? fieldError.message : undefined;
-
-  const commonFieldProps = {
-    label: meta.label,
-    fieldId,
-    required,
-    helpText: meta.helpText,
-    hint: meta.hint,
-    error: errorMessage,
-  };
-
-  switch (fieldId) {
-    case "prospectName":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="text"
-              placeholder={meta.placeholder}
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("prospectName")}
-            />
-          )}
-        </Field>
-      );
-    case "propertyAddress":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="text"
-              placeholder={meta.placeholder}
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("propertyAddress")}
-            />
-          )}
-        </Field>
-      );
-    case "zipCode":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="text"
-              inputMode="numeric"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("zipCode")}
-            />
-          )}
-        </Field>
-      );
-    case "taxYear":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="number"
-              inputMode="numeric"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("taxYear", { valueAsNumber: true })}
-            />
-          )}
-        </Field>
-      );
-    case "taxDeadline":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <select
-              id={id}
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={selectClassName}
-              {...register("taxDeadline")}
-            >
-              {TAX_DEADLINE_OPTIONS.map((deadline) => (
-                <option key={deadline} value={deadline}>
-                  {deadline}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      );
-    case "purchasePrice":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input
-                id={id}
-                type="number"
-                step="0.01"
-                min="0"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                className={currencyInputClassName}
-                {...register("purchasePrice", { valueAsNumber: true })}
-              />
-            </div>
-          )}
-        </Field>
-      );
-    case "landValuePercent":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <div className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3">
-              <input
-                id={id}
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                max="80"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                className="w-full border-none bg-transparent text-sm text-slate-100 outline-none"
-                {...register("landValuePercent", { valueAsNumber: true })}
-              />
-              <span className="text-xs text-slate-500">%</span>
-            </div>
-          )}
-        </Field>
-      );
-    case "hasCapitalImprovements":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <Controller
-              control={control}
-              name="hasCapitalImprovements"
-              render={({ field }) => (
-                <select
-                  id={id}
-                  aria-describedby={describedBy}
-                  aria-invalid={invalid}
-                  className={selectClassName}
-                  value={field.value ? "yes" : "no"}
-                  onChange={(event) => field.onChange(event.target.value === "yes")}
-                >
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              )}
-            />
-          )}
-        </Field>
-      );
-    case "capitalImprovementsAmount":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input
-                id={id}
-                type="number"
-                step="0.01"
-                min="0"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                className={currencyInputClassName}
-                {...register("capitalImprovementsAmount", { valueAsNumber: true })}
-              />
-            </div>
-          )}
-        </Field>
-      );
-    case "priceOverride":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <Controller
-              control={control}
-              name="priceOverride"
-              render={({ field }) => (
-                <select
-                  id={id}
-                  aria-describedby={describedBy}
-                  aria-invalid={invalid}
-                  className={selectClassName}
-                  value={field.value ? "yes" : "no"}
-                  onChange={(event) => field.onChange(event.target.value === "yes")}
-                >
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              )}
-            />
-          )}
-        </Field>
-      );
-    case "overrideAmount":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input
-                id={id}
-                type="number"
-                step="0.01"
-                min="0"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                className={currencyInputClassName}
-                {...register("overrideAmount", { valueAsNumber: true })}
-              />
-            </div>
-          )}
-        </Field>
-      );
-    case "propertyType":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <select
-              id={id}
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={selectClassName}
-              {...register("propertyType")}
-            >
-              {PROPERTY_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      );
-    case "yearBuilt":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="number"
-              inputMode="numeric"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("yearBuilt", { valueAsNumber: true })}
-            />
-          )}
-        </Field>
-      );
-    case "numberOfFloors":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="number"
-              inputMode="numeric"
-              min="1"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("numberOfFloors", { valueAsNumber: true })}
-            />
-          )}
-        </Field>
-      );
-    case "sqftBuilding":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="number"
-              inputMode="numeric"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("sqftBuilding", { valueAsNumber: true })}
-            />
-          )}
-        </Field>
-      );
-    case "acresLand":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="number"
-              step="0.01"
-              min="0"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("acresLand", { valueAsNumber: true })}
-            />
-          )}
-        </Field>
-      );
-    case "multipleProperties":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <input
-              id={id}
-              type="number"
-              inputMode="numeric"
-              min="1"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={baseInputClassName}
-              {...register("multipleProperties", { valueAsNumber: true })}
-            />
-          )}
-        </Field>
-      );
-    case "is1031Exchange":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <Controller
-              control={control}
-              name="is1031Exchange"
-              render={({ field }) => (
-                <select
-                  id={id}
-                  aria-describedby={describedBy}
-                  aria-invalid={invalid}
-                  className={selectClassName}
-                  value={field.value ? "yes" : "no"}
-                  onChange={(event) => field.onChange(event.target.value === "yes")}
-                >
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              )}
-            />
-          )}
-        </Field>
-      );
-    case "accumulated1031Depreciation":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-              <input
-                id={id}
-                type="number"
-                step="0.01"
-                min="0"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                className={currencyInputClassName}
-                {...register("accumulated1031Depreciation", { valueAsNumber: true })}
-              />
-            </div>
-          )}
-        </Field>
-      );
-    case "needRush":
-      return (
-        <Field {...commonFieldProps}>
-          {({ id, describedBy, invalid }) => (
-            <select
-              id={id}
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-              className={selectClassName}
-              {...register("needRush")}
-            >
-              {RUSH_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {RUSH_OPTION_LABELS[option]}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      );
-    default:
-      return null;
-  }
+interface FieldWrapperProps {
+  fieldId: keyof QuoteSchema;
+  meta: { label: string; hint?: string; helpText?: string };
+  error?: string;
+  required?: boolean;
+  className?: string;
+  children: (props: { id: string; describedBy?: string; invalid: boolean }) => ReactNode;
 }
 
-function determineRequired(fieldId: FieldId, values: QuoteFormValues): boolean {
-  if (fieldId === "capitalImprovementsAmount") {
-    return values.hasCapitalImprovements;
-  }
-  if (fieldId === "accumulated1031Depreciation") {
-    return values.is1031Exchange;
-  }
-  if (fieldId === "overrideAmount") {
-    return Boolean(values.priceOverride);
-  }
-  return true;
-}
-
-function LiveSummary({
-  values,
-  results,
-}: {
-  values: QuoteFormValues;
-  results: QuoteComputation;
-}) {
+function FieldWrapper({ fieldId, meta, error, required, className, children }: FieldWrapperProps) {
   return (
-    <aside className="hidden lg:block">
-      <div className="sticky top-6 space-y-6 rounded-3xl border border-white/10 bg-slate-950/80 p-6 text-slate-100 shadow-2xl backdrop-blur">
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">Live summary</p>
-          <p className="text-4xl font-semibold text-white">{formatMoney(results.finalBid)}</p>
-          <p className="text-xs text-slate-400">Final bid updates as you configure.</p>
-        </div>
+    <Field
+      fieldId={fieldId}
+      label={meta.label}
+      hint={meta.hint}
+      helpText={meta.helpText}
+      error={error}
+      required={required}
+      className={className}
+    >
+      {children}
+    </Field>
+  );
+}
 
-        <div className="space-y-3">
-          <SummaryRow label="Base cost seg bid" value={results.baseCostSegBid} />
-          <SummaryRow label="Natural log quote" value={results.natLogQuote} />
-          <SummaryRow label="Cost method floor" value={results.costMethodQuote} highlight />
-          {results.rushFee > 0 ? (
-            <SummaryRow label="Rush fee" value={results.rushFee} subtle />
-          ) : null}
-        </div>
+interface SectionProps {
+  title: string;
+  description: string;
+  children: ReactNode;
+}
 
-        <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/40 p-4">
-          <SummaryStat
-            label="50/50 plan"
-            value={results.fiftyFiftyPlanTotal}
-            hint={`${formatMoney(results.fiftyFiftyInstallment)} × 2`}
-          />
-          <SummaryStat
-            label="Monthly plan"
-            value={results.monthlyTotal}
-            hint={`${formatMoney(results.monthlyInstallment)} / month`}
-          />
-          <SummaryStat
-            label="Bonus depreciation"
-            value={results.bonusDepreciation}
-            hint="Est. 80% capture"
-          />
-        </div>
-
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-slate-300">
-          <SnapshotRow label="Property type" value={values.propertyType} />
-          <SnapshotRow label="Tax year" value={`${values.taxYear} • ${values.taxDeadline}`} />
-          <SnapshotRow label="Building size" value={`${formatNumber(values.sqftBuilding)} sqft`} />
-          <SnapshotRow label="Acreage" value={`${values.acresLand.toFixed(2)} acres`} />
-          <SnapshotRow label="Structures" value={`${values.multipleProperties}`} />
-          <SnapshotRow label="Year built" value={`${values.yearBuilt}`} />
-          <SnapshotRow
-            label="Rush"
-            value={values.needRush === "rush" ? "Rush selected" : "Standard turnaround"}
-          />
-        </div>
+function Section({ title, description, children }: SectionProps) {
+  return (
+    <section className="space-y-6 rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold text-white">{title}</h2>
+        <p className="text-sm text-slate-400">{description}</p>
       </div>
-    </aside>
+      {children}
+    </section>
+  );
+}
+
+interface ToggleOption<T> {
+  value: T;
+  label: string;
+}
+
+interface ToggleChipsProps<T> {
+  id: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: ToggleOption<T>[];
+  describedBy?: string;
+  invalid?: boolean;
+}
+
+function ToggleChips<T extends string | number | boolean>({
+  id,
+  value,
+  onChange,
+  options,
+  describedBy,
+  invalid,
+}: ToggleChipsProps<T>) {
+  return (
+    <div
+      id={`${id}-group`}
+      role="radiogroup"
+      aria-describedby={describedBy}
+      aria-invalid={invalid || undefined}
+      className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+    >
+      {options.map((option, index) => {
+        const isActive = option.value === value;
+        const inputId = index === 0 ? id : `${id}-${index}`;
+        return (
+          <label
+            key={String(option.value)}
+            role="radio"
+            aria-checked={isActive}
+            className={`flex cursor-pointer items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-300/80 ${
+              isActive
+                ? "border-emerald-400 bg-emerald-400/10 text-emerald-200 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]"
+                : "border-slate-700/70 bg-slate-900 text-slate-300 hover:border-emerald-300/60 hover:text-emerald-100"
+            }`}
+          >
+            <input
+              type="radio"
+              name={id}
+              value={String(option.value)}
+              checked={isActive}
+              onChange={() => onChange(option.value)}
+              id={inputId}
+              className="sr-only"
+            />
+            <span className="w-full text-center">{option.label}</span>
+          </label>
+        );
+      })}
+    </div>
   );
 }
 
 function SummaryRow({
   label,
   value,
-  highlight = false,
-  subtle = false,
+  emphasis,
+  subtle,
 }: {
   label: string;
   value: number;
-  highlight?: boolean;
+  emphasis?: boolean;
   subtle?: boolean;
 }) {
-  const tone = highlight
-    ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
-    : subtle
-      ? "border-white/5 bg-white/5 text-slate-300"
-      : "border-white/10 bg-black/30 text-slate-100";
-
   return (
-    <div className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${tone}`}>
+    <div
+      className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${
+        emphasis
+          ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-100"
+          : subtle
+            ? "border-slate-800 bg-slate-900 text-slate-300"
+            : "border-slate-800/80 bg-slate-900/60 text-slate-200"
+      }`}
+    >
       <span>{label}</span>
       <span className="font-semibold">{formatMoney(value)}</span>
     </div>
   );
 }
 
-function SummaryStat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint?: string;
-}) {
+function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-1">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">{label}</p>
-      <p className="text-lg font-semibold text-white">{formatMoney(value)}</p>
-      {hint ? <p className="text-xs text-slate-400">{hint}</p> : null}
+    <div className="flex items-baseline justify-between gap-4 text-sm">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-medium text-slate-200">{value}</span>
     </div>
   );
 }
 
-function SnapshotRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="uppercase tracking-[0.25em] text-slate-500">{label}</span>
-      <span className="font-semibold text-slate-100">{value}</span>
-    </div>
-  );
+interface Html2PdfInstance {
+  set: (options: Record<string, unknown>) => Html2PdfInstance;
+  from: (element: HTMLElement) => Html2PdfInstance;
+  save: () => Promise<void> | void;
+}
+
+type Html2PdfFactory = () => Html2PdfInstance;
+
+async function loadHtml2Pdf(): Promise<Html2PdfFactory | null> {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const globalWindow = window as typeof window & { html2pdf?: Html2PdfFactory };
+  if (globalWindow.html2pdf) {
+    return globalWindow.html2pdf;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load html2pdf.js"));
+    document.body.appendChild(script);
+  });
+
+  return globalWindow.html2pdf ?? null;
 }
