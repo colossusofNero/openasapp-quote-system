@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 interface FieldRenderProps {
@@ -17,6 +18,7 @@ interface FieldProps {
   helpText?: string;
   error?: string;
   className?: string;
+  hint?: string;
 }
 
 export function Field({
@@ -27,32 +29,45 @@ export function Field({
   helpText,
   error,
   className,
+  hint,
 }: FieldProps) {
   const helpId = helpText ? `${fieldId}-help` : undefined;
+  const hintId = hint ? `${fieldId}-hint` : undefined;
   const errorId = error ? `${fieldId}-error` : undefined;
-  const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [helpId, hintId, errorId].filter(Boolean).join(" ") || undefined;
   const invalid = Boolean(error);
 
   return (
     <div className={cn("space-y-2", className)}>
-      <label htmlFor={fieldId} className="block text-sm font-semibold text-slate-900">
-        {label}
-        {required ? (
-          <span className="ml-1 text-base font-normal text-rose-500" aria-hidden>
-            *
+      <div className="flex items-start justify-between gap-3">
+        <label htmlFor={fieldId} className="text-sm font-semibold text-slate-100">
+          <span className="inline-flex items-center gap-1">
+            {label}
+            {required ? (
+              <span className="text-xs font-medium text-emerald-300" aria-hidden>
+                *
+              </span>
+            ) : (
+              <span className="rounded-full border border-slate-700/60 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                Optional
+              </span>
+            )}
           </span>
-        ) : (
-          <span className="ml-2 text-sm font-medium text-slate-400">(Optional)</span>
+        </label>
+        {hint && (
+          <span id={hintId} className="text-xs text-slate-400">
+            {hint}
+          </span>
         )}
-      </label>
+      </div>
       {children({ id: fieldId, describedBy, invalid })}
       {helpText && (
-        <p id={helpId} className="text-xs text-slate-500">
+        <p id={helpId} className="text-xs text-slate-400">
           {helpText}
         </p>
       )}
       {error && (
-        <p id={errorId} className="text-xs font-semibold text-rose-600">
+        <p id={errorId} className="text-xs font-semibold text-rose-400">
           {error}
         </p>
       )}
