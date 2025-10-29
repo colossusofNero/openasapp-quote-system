@@ -427,3 +427,4 @@ Developed by the OpenAsApp team with assistance from Claude Code.
 **Status**: Production-ready (requires database setup)
 **Version**: 1.0.0
 **Last Updated**: October 20, 2025
+“Deployed via PR preview ✅”.
